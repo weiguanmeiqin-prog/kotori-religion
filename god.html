@@ -17,7 +17,24 @@ body{
 }
 @keyframes spin{
   100%{transform:rotate(360deg);}
-}
+}    /* --- 巨大化アニメーション --- */
+    @keyframes bless-grow {
+      0% { transform: scale(1); }
+      100% { transform: scale(20); } /* 20倍に巨大化！ */
+    }
+
+    /* --- 高速回転アニメーション --- */
+    @keyframes bless-spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* --- 点滅アニメーション --- */
+    @keyframes bless-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+  
 </style>
 
 </head>
@@ -32,10 +49,59 @@ body{
 <button onclick="bless()">祝福を受ける</button>
 
 <script>
+  <script>
+  // --- 祝福（巨大化＆乱舞）関数 ---
   function bless() {
-    alert("オリガミノコトリッ!!");
-    document.body.style.backgroundColor = "black";
+    // 1. アラート（セリフ）を表示（これは残しておきましょう！）
+    alert("オリガミノコトリッ！！");
+
+    // 2. 教祖（🕊️）を巨大化させる
+    const god = document.getElementById('god');
+    // 今の回転アニメーションを止めて、巨大化＆点滅アニメーションに切り替える
+    god.style.animation = 'bless-spin 0.5s linear infinite, bless-grow 2s ease-in-out forwards, bless-blink 0.3s linear infinite';
+    
+    // 3. 聖なる言葉（文字）を乱舞させる
+    const words = ["オリガミノコトリッ！！", "祝福ッ！！", "悟りッ！！", "折れッ！！", "飛べッ！！"];
+    for (let i = 0; i < 100; i++) { // 100個の文字を生成
+      setTimeout(() => {
+        const wordDiv = document.createElement('div');
+        wordDiv.innerText = words[Math.random() * words.length | 0]; // ランダムな言葉を選択
+        wordDiv.style.position = 'fixed';
+        
+        // ランダムな位置、サイズ、色
+        wordDiv.style.top = Math.random() * 100 + 'vh';
+        wordDiv.style.left = Math.random() * 100 + 'vw';
+        wordDiv.style.fontSize = (Math.random() * 30 + 20) + 'px'; // 20px〜50px
+        wordDiv.style.color = `hsl(${Math.random() * 360}, 100%, 50%)`; // ランダムな虹色
+        
+        wordDiv.style.zIndex = '9998'; // 教祖よりは下に配置
+        wordDiv.style.pointerEvents = 'none'; // クリックの邪魔をしない
+        wordDiv.style.transition = 'transform 1s ease-out, opacity 1s';
+        
+        document.body.appendChild(wordDiv);
+
+        // アニメーション（少し動かして消す）
+        setTimeout(() => {
+          wordDiv.style.transform = `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 360}deg) scale(${Math.random() * 2 + 1})`;
+          wordDiv.style.opacity = '0';
+        }, 100);
+
+        // 使い終わった要素を消す
+        setTimeout(() => wordDiv.remove(), 2000); // 2秒後に消去
+      }, i * 20); // 0.02秒おきに1個ずつ生成
+    }
+
+    // 4. 背景色を赤くする（これは残しておきます）
+    document.body.style.backgroundColor = "red";
+    
+    // 5. 5秒後に元に戻す（時限装置）
+    setTimeout(() => {
+      god.style.animation = 'spin 5s linear infinite'; // 元のアニメーションに戻す
+      document.body.style.backgroundColor = "black"; // 背景色を黒に戻す
+    }, 5000); // 5秒後に実行
   }
+</script>
+
 </script>
 
 
