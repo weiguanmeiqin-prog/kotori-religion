@@ -14,11 +14,16 @@ body{
 #god{
   font-size:120px;
   animation: spin 5s linear infinite;
-}
-@keyframes spin{
-  100%{transform:rotate(360deg);}
-}    /* --- 巨大化アニメーション --- */
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    } /* ←これが全体の終わりを示す大事なカッコ！ */
+
+    /* --- 巨大化アニメーション --- */
     @keyframes bless-grow {
+      0% { transform: scale(1); }
+      100% { transform: scale(20); }
+    }
+
       0% { transform: scale(1); }
       100% { transform: scale(20); } /* 20倍に巨大化！ */
     }
