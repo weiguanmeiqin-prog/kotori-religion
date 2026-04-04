@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>教祖</title>
+
+<style>
+body{
+  background:black;
+  color:white;
+  text-align:center;
+  font-family:serif;
+}
+#god{
+  font-size:120px;
+  animation: spin 5s linear infinite;
+}
+@keyframes spin{
+  100%{transform:rotate(360deg);}
+}
+</style>
+
+</head>
+<body>
+
+<h1>教祖</h1>
+
+<div id="god">🕊</div>
+
+<p>すべてを折った者</p>
+
+<button onclick="bless()">祝福を受ける</button>
+
+<script>
+function bless(){
+  alert("あなたはもう戻れない");
+  document.body.style.background="red";
+}
+</script>
+
+</body>
+</html>
