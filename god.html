@@ -185,6 +185,114 @@ function updateCollection() {
 // ページを開いた時に実行
 updateCollection();
 </script>
+<style>
+  /* 図鑑の外枠 */
+  .zukan-container {
+    background: #1a1a1a;
+    border: 3px solid #d4af37; /* 金色の枠 */
+    border-radius: 15px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 500px;
+  }
+  .zukan-title { color: #d4af37; font-size: 1.5em; margin-bottom: 10px; }
+
+  /* 3列のグリッド */
+  .zukan-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+  }
+
+  /* 1個ずつのカード */
+  .zukan-card {
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 10px;
+    padding: 10px 5px;
+    font-size: 10px;
+    color: #ccc;
+  }
+
+  /* 切り抜き表示の窓 */
+  .zukan-window {
+    width: 80px; 
+    height: 60px;
+    overflow: hidden;
+    margin: 0 auto 8px;
+    position: relative;
+    border-radius: 5px;
+    background: #000;
+  }
+
+  /* 元の画像(IMG_0263.png)を1/3サイズで表示 */
+  .zukan-img {
+    position: absolute;
+    width: 320px;  /* 960 / 3 */
+    height: 190px; /* 570 / 3 */
+    filter: brightness(0); /* 最初は真っ黒（未入手） */
+  }
+
+  /* 入手済みの時はカラーにする */
+  .is-got { filter: brightness(1) !important; }
+</style>
+
+<div class="zukan-container">
+  <div class="zukan-title">📜 聖なる小鳥図鑑</div>
+  <div id="zukan-percent" style="margin-bottom:15px;">収集率: 0%</div>
+  <div class="zukan-grid" id="zukan-list"></div>
+</div>
+
+<script>
+// ガチャと同じキャラクターデータ（ここが一致してないとダメだよ！）
+const characters = [
+  {name:"🐦 ノーマル小鳥", col:0, row:0},
+  {name:"🐥 元気な小鳥", col:1, row:0},
+  {name:"🌙 夜の小鳥", col:2, row:0},
+  {name:"🔥 炎の小鳥", col:3, row:0},
+  {name:"❄️ 氷の小鳥", col:0, row:1},
+  {name:"🌈 虹の小鳥", col:1, row:1},
+  {name:"💀 闇の小鳥", col:2, row:1},
+  {name:"👼 天使の小鳥", col:3, row:1},
+  {name:"👑 教祖", col:0, row:2},
+  {name:"🌀 異界の小鳥", col:1, row:2},
+  {name:"💎 神話の小鳥", col:2, row:2},
+  {name:"🌌 宇宙小鳥", col:3, row:2}
+];
+
+function showZukan() {
+  const list = document.getElementById("zukan-list");
+  const gotList = JSON.parse(localStorage.getItem("birdCollection") || "[]");
+  
+  list.innerHTML = "";
+
+  characters.forEach(bird => {
+    const isGot = gotList.includes(bird.name);
+    const card = document.createElement("div");
+    card.className = "zukan-card";
+
+    // 画像のズレを計算（縮小版なので 80px と 63px ずつずらす）
+    const px = -(bird.col * 80);
+    const py = -(bird.row * 63);
+
+    card.innerHTML = `
+      <div class="zukan-window">
+        <img src="IMG_0263.png" class="zukan-img ${isGot ? 'is-got' : ''}" 
+             style="left:${px}px; top:${py}px">
+      </div>
+      <div>${isGot ? bird.name : "？？？"}</div>
+    `;
+    list.appendChild(card);
+  });
+
+  // 収集率の更新
+  const percent = Math.floor((gotList.length / characters.length) * 100);
+  document.getElementById("zukan-percent").innerText = "収集率: " + percent + "%";
+}
+
+// ページ読み込み時に図鑑を表示
+window.onload = showZukan;
+</script>
 
 
 </body>
