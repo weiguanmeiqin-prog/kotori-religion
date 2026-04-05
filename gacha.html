@@ -36,7 +36,26 @@ const characters = [
 
 // ガチャ
 function gacha(){
+let today = new Date().toLocaleDateString();
+let lastDate = localStorage.getItem("lastDate");
+let count = Number(localStorage.getItem("gachaCount") || 0);
 
+// 日付変わったらリセット
+if (lastDate !== today) {
+  localStorage.setItem("lastDate", today);
+  localStorage.setItem("gachaCount", 0);
+  count = 0;
+}
+
+// 回数制限
+if (count >= 3) {
+  alert("今日はもうガチャ引けない！");
+  return;
+}
+
+// 回数カウント
+count++;
+localStorage.setItem("gachaCount", count);
   let coins = Number(localStorage.getItem("userCoins") || 0);
 
   if (coins < 10) {
