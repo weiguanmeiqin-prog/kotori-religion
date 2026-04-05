@@ -99,6 +99,131 @@ function gacha(){
     rand -= c.rate;
     if (rand <= 0) {
       selected = c;
+      <!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>小鳥ガチャ</title>
+<style>
+  body { background: black; color: white; text-align: center; font-family: sans-serif; }
+  h1 { font-size: 2em; margin-top: 20px; }
+  #coins { font-size: 1.2em; margin: 10px 0; }
+  button { font-size: 1.2em; padding: 10px 20px; cursor: pointer; background: #444; color: white; border: 1px solid #666; border-radius: 5px; }
+  button:hover { background: #555; }
+  
+  /* ★ここが魔法のポイント！ 画像の一部だけを表示する枠 */
+  #bird-window {
+    width: 230px;  /* 1匹分の幅 */
+    height: 180px; /* 1匹分の高さ */
+    overflow: hidden; /* 枠からはみ出た部分は隠す */
+    margin: 20px auto;
+    border: 4px solid #333;
+    border-radius: 10px;
+    display: none; /* 最初は隠しておく */
+    position: relative;
+  }
+  
+  /* 枠の中にある大きな画像 */
+  #bird-sprite {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 960px; /* 元の画像の横幅 (240px * 4列) */
+    height: 570px; /* 元の画像の縦幅 (190px * 3行) */
+    /* ※生成された画像のサイズによって、微調整が必要になる場合があります */
+  }
+</style>
+</head>
+<body>
+
+<h1>🎰 小鳥ガチャ</h1>
+
+<p id="coins"></p>
+
+<button onclick="gacha()">ガチャを引く（10コイン）</button>
+
+<div id="bird-window">
+  <img src="IMG_0263.png" id="bird-sprite" alt="小鳥">
+</div>
+
+<div id="result-name"></div>
+
+<script>
+// キャラ一覧（画像の位置情報を追加）
+const characters = [
+  // col:列(0〜3), row:行(0〜2)
+  {name:"🐦 ノーマル小鳥", rate:40, col:0, row:0},
+  {name:"🐥 元気な小鳥", rate:20, col:1, row:0},
+  {name:"🌙 夜の小鳥", rate:10, col:2, row:0},
+  {name:"🔥 炎の小鳥", rate:8, col:3, row:0},
+  
+  {name:"❄️ 氷の小鳥", rate:6, col:0, row:1},
+  {name:"🌈 虹の小鳥", rate:5, col:1, row:1},
+  {name:"💀 闇の小鳥", rate:4, col:2, row:1},
+  {name:"👼 天使の小鳥", rate:3, col:3, row:1},
+  
+  {name:"👑 教祖", rate:2, col:0, row:2},
+  {name:"🌀 異界の小鳥", rate:1, col:1, row:2},
+  {name:"💎 神話の小鳥", rate:0.5, col:2, row:2},
+  {name:"🌌 宇宙小鳥", rate:0.5, col:3, row:2}
+];
+
+// 1匹のサイズ（画像に合わせて微調整が必要かも）
+const birdW = 240; // 横幅のピクセル
+const birdH = 190; // 縦幅のピクセル
+
+// ページ読み込み
+window.onload = function() {
+  let coins = Number(localStorage.getItem("userCoins") || 0);
+  document.getElementById("coins").innerText = "コイン：" + coins;
+};
+
+// ガチャ
+function gacha(){
+  let coins = Number(localStorage.getItem("userCoins") || 0);
+
+  if (coins < 10) {
+    alert("コインが足りない！修行（ログイン）してきなさい！");
+    return;
+  }
+
+  coins -= 10;
+  localStorage.setItem("userCoins", coins);
+  document.getElementById("coins").innerText = "コイン：" + coins;
+
+  // 確率処理
+  let totalRate = characters.reduce((sum, c) => sum + c.rate, 0);
+  let rand = Math.random() * totalRate;
+
+  let selected;
+  for (let c of characters) {
+    rand -= c.rate;
+    if (rand <= 0) {
+      selected = c;
+      break;
+    }
+  }
+
+  // 表示
+  document.getElementById("result-name").innerHTML = "<h2>" + selected.name + "</h2>";
+  
+  // ★魔法の発動！ 画像を表示して、位置をずらす
+  const windowEl = document.getElementById("bird-window");
+  const spriteEl = document.getElementById("bird-sprite");
+  
+  // 当たった小鳥の位置を計算（マイナスにするのがコツ）
+  const posX = -selected.col * birdW;
+  const posY = -selected.row * birdH;
+  
+  // 画像の位置をずらして、窓の中に表示させる
+  spriteEl.style.left = posX + "px";
+  spriteEl.style.top = posY + "px";
+  windowEl.style.display = "block"; // 窓を表示
+}
+</script>
+
+</body>
+</html>
       break;
     }
   }
