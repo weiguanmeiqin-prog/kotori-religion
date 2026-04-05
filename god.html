@@ -106,6 +106,85 @@ body{
   }
 
 </script>
+<style>
+  /* 図鑑全体のスタイル */
+  .collection-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3列に並べる */
+    gap: 10px;
+    padding: 20px;
+  }
+
+  .bird-card {
+    background: #222;
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    font-size: 12px;
+  }
+
+  /* 未入手の時は画像を暗くする */
+  .locked {
+    filter: brightness(0) invert(0.3); /* シルエット化 */
+  }
+
+  /* 図鑑用の小さな窓 */
+  .thumb-window {
+    width: 80px; 
+    height: 60px;
+    overflow: hidden;
+    margin: 0 auto 5px;
+    position: relative;
+    border: 1px solid #555;
+  }
+
+  .thumb-img {
+    position: absolute;
+    width: 320px; /* 元の幅(960)を1/3に縮小 */
+    height: 190px; /* 元の高さ(570)を1/3に縮小 */
+  }
+</style>
+
+<div id="status">図鑑コンプリート率: <span id="percent">0</span>%</div>
+<div class="collection-grid" id="collection-list"></div>
+
+<script>
+// 図鑑を表示する関数
+function updateCollection() {
+  const list = document.getElementById("collection-list");
+  list.innerHTML = "";
+  
+  // 保存されている「入手済みリスト」を取得
+  const gotBirds = JSON.parse(localStorage.getItem("birdCollection") || "[]");
+
+  characters.forEach((bird, index) => {
+    const isGot = gotBirds.includes(bird.name);
+    const card = document.createElement("div");
+    card.className = "bird-card";
+    
+    // 画像の位置計算（ガチャと同じ仕組み）
+    const posX = -(bird.col * 80);
+    const posY = -(bird.row * 63);
+
+    card.innerHTML = `
+      <div class="thumb-window">
+        <img src="IMG_0263.png" class="thumb-img ${isGot ? '' : 'locked'}" 
+             style="left:${posX}px; top:${posY}px">
+      </div>
+      <div>${isGot ? bird.name : "？？？"}</div>
+    `;
+    list.appendChild(card);
+  });
+
+  // 達成率の計算
+  const percent = Math.floor((gotBirds.length / characters.length) * 100);
+  document.getElementById("percent").innerText = percent;
+}
+
+// ページを開いた時に実行
+updateCollection();
+</script>
 
 
 </body>
