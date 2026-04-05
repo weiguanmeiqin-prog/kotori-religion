@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>教祖の聖域</title>
+<style>
+  body { background: #050505; color: white; text-align: center; font-family: "Hiragino Mincho ProN", serif; line-height: 1.6; }
+  .section { border: 1px solid #333; margin: 20px; padding: 20px; border-radius: 15px; background: rgba(255,255,255,0.05); }
+  button { background: #444; color: white; border: 1px solid #00bfff; padding: 10px 20px; border-radius: 5px; cursor: pointer; transition: 0.3s; }
+  button:hover { background: #00bfff; color: black; }
+  #coins { font-size: 1.5em; color: #ffeb3b; }
+  .bird { font-size: 50px; cursor: pointer; display: inline-block; transition: 0.2s; }
+  .bird:active { transform: scale(1.5); }
+</style>
+</head>
+<body>
+
+  <div style="padding: 20px;">
+    <img src="9F10F07F-1186-4DB5-B601-DFD33E2D96EA.png" alt="教団ロゴ" style="width: 80%; max-width: 350px;">
+    <p id="rank" style="color: #00bfff;">階級：読み込み中...</p>
+    <div id="coins">コイン：0</div>
+  </div>
+
+  <button onclick="location.href='gacha.html'">🎰 ガチャ会場へ行く</button>
+
+  <div class="section" style="background: #fff9e6; color: #333;">
+    <h2 style="color: #0000ff; margin: 0;">🐤 今日の小鳥の教え</h2>
+    <p id="today-lesson" style="font-size: 1.2rem; font-weight: bold; color: #00bfff;">...</p>
+  </div>
+
+  <div class="section">
+    <h3>🎁 毎日の修行</h3>
+    <button id="login-btn">ログインしてコインをもらう</button>
+  </div>
+
+  <div class="section" style="border-style: dashed; border-color: #00bfff;">
+    <h2 style="color: #ffeb3b;">✨ 徳を積む場所</h2>
+    <button onclick="donateNew()">お賽銭を投げる</button>
+    <p id="merit-msg-new" style="color: #00ff00;"></p>
+    <hr style="border: 0.5px solid #333;">
+    <h3>🌐 小鳥語翻訳</h3>
+    <input type="text" id="human-word-new" placeholder="言葉を入力...">
+    <button onclick="translateBirdNew()">翻訳</button>
+    <p id="bird-result-new" style="color: #00bfff; font-weight: bold;"></p>
+  </div>
+
+  <div class="section" style="background: linear-gradient(to bottom, #1a1a1a, #000);">
+    <h2>🙏 精神統一の刻</h2>
+    <div id="timer-display" style="font-size: 2.5rem; color: #ffeb3b;">30</div>
+    <button id="pray-btn" onclick="startPray()">祈りを捧げる</button>
+    <div id="secret-area" style="display: none; margin-top: 10px;">
+      <p>✨ 悟りを開きました ✨</p>
+      <button onclick="rainBirds()">🌈 神を降臨させる</button>
+    </div>
+  </div>
+
+  <div id="birds-area" style="min-height: 100px;"></div>
+
+<script>
+  // --- 初期化処理 ---
+  window.onload = () => {
+    updateCoinDisplay();
+    showLesson();
+    document.getElementById("rank").innerText = "階級：" + (localStorage.getItem("rank") || "見習い折り師");
+    spawnBird();
+  };
+
+  function updateCoinDisplay() {
+    const c = localStorage.getItem("userCoins") || 0;
+    document.getElementById("coins").innerText = "コイン：" + c;
+  }
+
+  // --- 教教え機能 ---
+  function showLesson() {
+    const lessons = ["高く飛ぶより、低く安定して飛べ。","折り目は心のしわ。","種を食べ、空を仰げ。","翼を休める勇気。","くちばしは災いの元。","風の吹く方へ進め。"];
+    const idx = new Date().getDate() % lessons.length;
+    document.getElementById("today-lesson").innerText = lessons[idx];
+  }
+
+  // --- ログインボーナス ---
+  document.getElementById('login-btn').addEventListener('click', () => {
+    let today = new Date().toLocaleDateString();
+    if (localStorage.getItem("loginDate") === today && Number(localStorage.getItem("loginCount")) >= 3) {
+      alert("今日はもう十分修行しました。");
+      return;
+    }
+    let c = Number(localStorage.getItem("userCoins") || 0) + 10;
+    let cnt = (localStorage.getItem("loginDate") === today) ? Number(localStorage.getItem("loginCount")) + 1 : 1;
+    localStorage.setItem("userCoins", c);
+    localStorage.setItem("loginDate", today);
+    localStorage.setItem("loginCount", cnt);
+    updateCoinDisplay();
+    alert("徳（10枚）を授けました。");
+  });
+
+  // --- お賽銭・翻訳 ---
+  let merit = 0;
+  function donateNew() {
+    merit += 100;
+    document.getElementById("merit-msg-new").innerText = merit > 500 ? "欲張りすぎです！" : "徳が " + merit + " 上がった！";
+  }
+  function translateBirdNew() {
+    const noises = ["ピピッ！", "チチッ！", "クルル…"];
+    document.getElementById("bird-result-new").innerText = "小鳥訳：「" + noises[Math.floor(Math.random()*noises.length)] + "」";
+  }
+
+  // --- 精神統一・エフェクト ---
+  function startPray() {
+    let time = 30;
+    const btn = document.getElementById('pray-btn');
+    btn.disabled = true;
+    const itv = setInterval(() => {
+      time--;
+      document.getElementById('timer-display').innerText = time;
+      if (time <= 0) {
+        clearInterval(itv);
+        document.getElementById('secret-area').style.display = 'block';
+      }
+    }, 1000);
+  }
+
+  function rainBirds() {
+    for(let i=0; i<30; i++) {
+      setTimeout(() => {
+        const b = document.createElement('div');
+        b.innerText = '🐤';
+        b.style.cssText = `position:fixed; top:-50px; left:${Math.random()*100}vw; font-size:30px; z-index:9999; pointer-events:none; transition:3s linear;`;
+        document.body.appendChild(b);
+        setTimeout(() => { b.style.transform = `translateY(${window.innerHeight+100}px) rotate(360deg)`; b.style.opacity = '0'; }, 100);
+        setTimeout(() => b.remove(), 3500);
+      }, i * 150);
+    }
+  }
+
+  function spawnBird() {
+    const b = document.createElement("div");
+    b.innerText="🕊"; b.className="bird";
+    b.onclick = () => { spawnBird(); if(Math.random() > 0.8) { localStorage.setItem("rank","真の小鳥"); location.reload(); } };
+    document.getElementById("birds-area").appendChild(b);
+  }
+</script>
+</body>
+</html>
