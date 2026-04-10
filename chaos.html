@@ -254,14 +254,14 @@ function share(){
 showQuestion();
 function shareLine(){
 
-  if(!resultObj){
-    alert("まだ結果が出ていません！");
+  if(!resultObj || !resultObj.title){
+    alert("結果がまだ正しく作られてない！");
     return;
   }
 
   let gameUrl = "https://weiguanmeiqin-prog.github.io/kotori-religion/chaos.html";
 
-  let text = resultObj.title;
+  let text = String(resultObj.title); // ←強制文字列化
 
   let url = "https://social-plugins.line.me/lineit/share?text="
             + encodeURIComponent(text + " " + gameUrl);
