@@ -262,7 +262,7 @@ function shareLine(){
 
   let gameUrl = "https://weiguanmeiqin-prog.github.io/kotori-religion/chaos.html";
 
-  let resultText = "私は『" + resultObj.title + "』でした！";
+  let text = resultObj.title; // ←これだけ！！
 
   let url = "https://social-plugins.line.me/lineit/share?url="
             + encodeURIComponent(gameUrl + "?result=" + resultObj.title)
