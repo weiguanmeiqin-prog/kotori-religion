@@ -266,7 +266,7 @@ function shareLine(){
   let url = "https://social-plugins.line.me/lineit/share?text="
             + encodeURIComponent(text + " " + gameUrl);
 
-  window.open(url, "_blank");
+  location.href = url;
 }
 
 
