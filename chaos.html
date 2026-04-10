@@ -254,22 +254,25 @@ function share(){
 showQuestion();
 function shareLine(){
 
+function shareLine(){
+
   if(!resultObj){
     alert("まだ結果が出ていません！");
     return;
   }
 
-  let gameUrl = "https://weiguanmeiqin-prog.github.io/kotori-religion/chaos.html"; // ←公開したURL入れる（後でOK）
+  let gameUrl = "https://weiguanmeiqin-prog.github.io/kotori-religion/chaos.html";
 
   let text = "私は小鳥でした\n" +
              "『" + resultObj.title + "』\n" +
-             resultObj.desc +
-             "\n" + gameUrl +
-             "\n#小鳥教診断";
+             "↓やってみて";
 
-  let url = "https://social-plugins.line.me/lineit/share?text=" + encodeURIComponent(text);
+  let url = "https://social-plugins.line.me/lineit/share?url="
+            + encodeURIComponent(gameUrl)
+            + "&text=" + encodeURIComponent(text);
 
-  window.open(url);
+  // ⚠️ iPhone安定版
+  location.href = url;
 }
 </script>
 
