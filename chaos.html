@@ -270,7 +270,18 @@ function shareLine(){
 
   location.href = url;
 }
+// URLから結果を取得
+let params = new URLSearchParams(location.search);
+let sharedResult = params.get("result");
 
+if(sharedResult){
+  document.getElementById("question").innerHTML = "";
+  document.getElementById("choices").innerHTML = "";
+
+  document.getElementById("result").innerHTML =
+    "<h1 style='font-size:40px'>" + decodeURIComponent(sharedResult) + "</h1>" +
+    "<p>（シェアされた結果）</p>";
+}
 </script>
 
 </body>
