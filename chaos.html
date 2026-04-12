@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐤 小鳥教カオス診断</title>
+    <style>
+        body {
+            background: black;
+            color: white;
+            text-align: center;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        h1 { font-size: 1.5rem; color: #ffd700; margin-bottom: 20px; }
+        h2 { font-size: 1.2rem; }
+        p { font-size: 1rem; line-height: 1.5; }
+
+        /* ボタンデザイン */
+        button {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.3s;
+            border-radius: 5px;
+            min-width: 200px;
+        }
+        button:hover {
+            background: white;
+            color: black;
+        }
+
+        /* 🌈 虹エフェクト */
+        .rainbow {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(45deg, red, orange, yellow, green, cyan, blue, purple);
+            opacity: 0.7;
+            z-index: -1;
+            animation: flash 0.5s infinite alternate;
+        }
+        @keyframes flash {
+            from { opacity: 0.2; }
+            to { opacity: 0.8; }
+        }
+
+        /* ⚡ グリッチエフェクト */
+        .glitch {
+            animation: glitch 0.1s infinite;
+        }
+        @keyframes glitch {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(5px, -5px); }
+            50% { transform: translate(-5px, 5px); }
+            75% { transform: translate(5px, 5px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* 小鳥のスタイル */
+        .falling-bird {
+            position: fixed;
+            cursor: pointer;
+            z-index: 100;
+            user-select: none;
+        }
+
+        #result-area {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-area">
+    <h1>🐤 小鳥教診断</h1>
+    <div id="question"></div>
+    <div id="choices"></div>
+</div>
+
+<div id="result-area">
+    <div id="result"></div>
+    <br>
+    <button onclick="share()">X(Twitter)でシェア</button><br>
+    <button onclick="shareLine()">LINEで送る</button><br>
+    <button onclick="location.reload()">もう一度診断する</button>
+</div>
+
+<script>
+let step = 0;
+let resultObj = null;
+let secretCount = 0;
+let type = { bird: 0, chaos: 0, dark: 0, god: 0, void: 0 };
+
+const questions = [
+    {q:"あなたは折り紙を折りますか？",choices:[{text:"折る",type:"bird"},{text:"折らない",type:"chaos"},{text:"燃やす",type:"dark"}]},
+    {q:"小鳥を見たらどうする？",choices:[{text:"愛でる",type:"bird"},{text:"観測する",type:"void"},{text:"崇める",type:"god"}]},
+    {q:"この世界は本物？",choices:[{text:"本物",type:"bird"},{text:"バグ",type:"chaos"},{text:"存在しない",type:"void"}]},
+    {q:"あなたは誰？",choices:[{text:"人間",type:"bird"},{text:"小鳥",type:"god"},{text:"不明",type:"void"}]},
+    {q:"折り紙は何回折れる？",choices:[{text:"1回",type:"bird"},{text:"∞",type:"chaos"},{text:"すでに折られている",type:"void"}]},
+    {q:"この診断どう思う？",choices:[{text:"楽しい",type:"bird"},{text:"意味不明",type:"chaos"},{text:"危険",type:"dark"}]},
+    {q:"教祖を見たら？",choices:[{text:"従う",type:"god"},{text:"疑う",type:"chaos"},{text:"逃げる",type:"dark"}]},
+    {q:"今の気持ちは？",choices:[{text:"🐤",type:"bird"},{text:"🌀",type:"chaos"},{text:"💀",type:"dark"}]},
+    {q:"あなたは観測されている？",choices:[{text:"されている",type:"void"},{text:"されていない",type:"bird"},{text:"気づいてないだけ",type:"dark"}]},
+    {q:"この先どうする？",choices:[{text:"進む",type:"bird"},{text:"戻る",type:"chaos"},{text:"消える",type:"void"}]}
+];
+
+function showQuestion() {
+    if (step >= questions.length) {
+        showResult();
+        return;
+    }
+    let q = questions[step];
+    document.getElementById("question").innerHTML = `<h2>(${step + 1}/${questions.length})<br>${q.q}</h2>`;
+    let html = "";
+    q.choices.forEach(c => {
+        html += `<button onclick="answer('${c.type}')">${c.text}</button><br>`;
+    });
+    document.getElementById("choices").innerHTML = html;
+}
+
+function answer(t) {
+    type[t]++;
+    spawnBird();
+    step++;
+    showQuestion();
+}
+
+function spawnBird() {
+    let b = document.createElement("div");
+    b.className = "falling-bird";
+    b.innerText = "🐤";
+    b.style.left = Math.random() * 90 + "%";
+    b.style.top = Math.random() * 90 + "%";
+    b.style.fontSize = (Math.random() * 20 + 20) + "px";
+    b.onclick = () => {
+        b.remove();
+        secretCount++;
+        if (secretCount >= 10) unlockSecret();
+    };
+    document.body.appendChild(b);
+}
+
+function unlockSecret() {
+    resultObj = { title: "🛠 開発者", desc: "すべてを作った存在。あなたは世界の裏側に到達しました。", rarity: "SECRET" };
+    showFinal();
+}
+
+function gachaEffect(rarity, callback) {
+    document.getElementById("game-area").style.display = "none";
+    let loading = document.createElement("div");
+    loading.innerHTML = "<h1>🐤🐤🐤</h1><p>運命を観測中...</p>";
+    document.body.appendChild(loading);
+
+    setTimeout(() => {
+        loading.remove();
+        if (rarity === "UR") {
+            document.body.style.background = "white";
+            document.body.style.color = "black";
+        } else if (rarity === "SSR" || rarity === "SSR+") {
+            let r = document.createElement("div");
+            r.className = "rainbow";
+            document.body.appendChild(r);
+        } else if (rarity === "SR") {
+            document.body.classList.add("glitch");
+        }
+        callback();
+    }, 1500);
+}
+
+function showResult() {
+    const table = {
+        bird:  [{title:"🐤 純粋な小鳥", desc:"優しい心の持ち主。まだ人間界に染まりきっていません。", rarity:"R"}, {title:"🌿 森の小鳥", desc:"自然と一体化しています。鳴き声が綺麗ですね。", rarity:"SSR"}],
+        chaos: [{title:"🌀 カオス存在", desc:"あなたの言動は誰にも予測できません。", rarity:"R"}, {title:"🔁 無限ループ者", desc:"同じ質問を一生繰り返す呪いにかかっています。", rarity:"SSR"}],
+        dark:  [{title:"🔥 異教徒", desc:"小鳥教を燃やそうとする危険な存在です。", rarity:"R"}, {title:"🩸 禁忌の追求者", desc:"深淵を覗きすぎて、深淵からも覗かれています。", rarity:"SSR"}],
+        god:   [{title:"👑 教祖候補", desc:"人々を導く素質があります。さあ、布教を。", rarity:"SR"}, {title:"🌟 光の教祖", desc:"あなたの後光で周囲の小鳥が集まってきます。", rarity:"SSR+"}],
+        void:  [{title:"🫥 虚無存在", desc:"そこにいるようで、どこにもいません。", rarity:"R"}, {title:"📦 折りたたまれし者", desc:"次元の隙間に収納されました。", rarity:"SSR"}]
+    };
+
+    let max = "bird";
+    for (let k in type) if (type[k] > type[max]) max = k;
+    let list = table[max];
+    resultObj = list[Math.floor(Math.random() * list.length)];
+
+    if (Math.random() < 0.03) resultObj = {title:"👑 真・教祖", desc:"すべてを理解した究極の存在。", rarity:"SSR+"};
+    if (Math.random() < 0.01) resultObj = {title:"🌌 神を超えた小鳥", desc:"もはや、この診断システムそのものです。", rarity:"UR"};
+
+    gachaEffect(resultObj.rarity, showFinal);
+}
+
+function showFinal() {
+    document.getElementById("game-area").style.display = "none";
+    document.getElementById("result-area").style.display = "block";
+    document.getElementById("result").innerHTML = `
+        <h1>${resultObj.title}</h1>
+        <h2>【ランク：${resultObj.rarity}】</h2>
+        <p>${resultObj.desc}</p>
+    `;
+}
+
+function share() {
+    if (!resultObj) return;
+    let text = `小鳥教カオス診断の結果は…\n【${resultObj.title}（${resultObj.rarity}）】でした！\n#小鳥教診断\n`;
+    window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text + location.href));
+}
+
+function shareLine() {
+    if (!resultObj) return;
+    let text = `小鳥教カオス診断の結果は…\n【${resultObj.title}（${resultObj.rarity}）】でした！`;
+    // LINEのシェアURL（テキストとURLを正しく結合）
+    location.href = "https://social-plugins.line.me/lineit/share?url=" + encodeURIComponent(location.href) + "&text=" + encodeURIComponent(text);
+}
+
+showQuestion();
+</script>
+</body>
+</html>
