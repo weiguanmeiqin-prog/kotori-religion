@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐤 小鳥教カオス診断</title>
+
+<style>
+body{
+  background:black;
+  color:white;
+  text-align:center;
+  font-family:sans-serif;
+  overflow:hidden;
+}
+
+/* 🌈 虹 */
+.rainbow{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:linear-gradient(45deg, red, orange, yellow, green, cyan, blue, purple);
+  opacity:0.7;
+  animation:flash 0.5s infinite alternate;
+}
+@keyframes flash{
+  from{opacity:0.2;}
+  to{opacity:0.8;}
+}
+
+/* ⚡ バグ */
+.glitch{
+  animation:glitch 0.1s infinite;
+}
+@keyframes glitch{
+  0%{transform:translate(0,0);}
+  25%{transform:translate(5px,-5px);}
+  50%{transform:translate(-5px,5px);}
+  75%{transform:translate(5px,5px);}
+  100%{transform:translate(0,0);}
+}
+</style>
+</head>
+
+<body>
+
+<h1>🐤 小鳥教診断</h1>
+
+<div id="question"></div>
+<div id="choices"></div>
+<div id="result"></div>
+
+<br>
+<button onclick="share()">結果をシェア</button>
+<button onclick="shareLine()">LINEで送る</button>
+
+<script>
+let step = 0;
+let resultObj = null;
+
+let type = { bird:0, chaos:0, dark:0, god:0, void:0 };
+
+// 質問
+const questions = [
+  {q:"あなたは折り紙を折りますか？",choices:[{text:"折る",type:"bird"},{text:"折らない",type:"chaos"},{text:"燃やす",type:"dark"}]},
+  {q:"小鳥を見たらどうする？",choices:[{text:"愛でる",type:"bird"},{text:"観測する",type:"void"},{text:"崇める",type:"god"}]},
+  {q:"この世界は本物？",choices:[{text:"本物",type:"bird"},{text:"バグ",type:"chaos"},{text:"存在しない",type:"void"}]},
+  {q:"あなたは誰？",choices:[{text:"人間",type:"bird"},{text:"小鳥",type:"god"},{text:"不明",type:"void"}]},
+  {q:"折り紙は何回折れる？",choices:[{text:"1回",type:"bird"},{text:"∞",type:"chaos"},{text:"すでに折られている",type:"void"}]},
+  {q:"この診断どう思う？",choices:[{text:"楽しい",type:"bird"},{text:"意味不明",type:"chaos"},{text:"危険",type:"dark"}]},
+  {q:"教祖を見たら？",choices:[{text:"従う",type:"god"},{text:"疑う",type:"chaos"},{text:"逃げる",type:"dark"}]},
+  {q:"今の気持ちは？",choices:[{text:"🐤",type:"bird"},{text:"🌀",type:"chaos"},{text:"💀",type:"dark"}]},
+  {q:"あなたは観測されている？",choices:[{text:"されている",type:"void"},{text:"されていない",type:"bird"},{text:"気づいてないだけ",type:"dark"}]},
+  {q:"この先どうする？",choices:[{text:"進む",type:"bird"},{text:"戻る",type:"chaos"},{text:"消える",type:"void"}]}
+];
+
+// 表示
+function showQuestion(){
+  if(step >= questions.length){ showResult(); return; }
+  let q = questions[step];
+
+  document.getElementById("question").innerHTML =
+    `<h2>(${step+1}/${questions.length})<br>${q.q}</h2>`;
+
+  let html="";
+  q.choices.forEach(c=>{
+    html += `<button onclick="answer('${c.type}')">${c.text}</button><br><br>`;
+  });
+
+  document.getElementById("choices").innerHTML = html;
+}
+
+// 回答
+function answer(t){
+  type[t]++;
+  step++;
+  showQuestion();
+}
+
+// 🎰 演出（レア度別）
+function gachaEffect(rarity, callback){
+
+  // 🌌 UR
+  if(rarity==="UR"){
+    document.body.style.background="white";
+    document.body.style.color="black";
+    setTimeout(()=>callback(),1200);
+    return;
+  }
+
+  // 🌈 SSR以上
+  if(rarity==="SSR" || rarity==="SSR+"){
+    let r=document.createElement("div");
+    r.className="rainbow";
+    document.body.appendChild(r);
+    setTimeout(()=>{r.remove();callback();},1500);
+    return;
+  }
+
+  // ⚡ SR
+  if(rarity==="SR"){
+    document.body.classList.add("glitch");
+    setTimeout(()=>{
+      document.body.classList.remove("glitch");
+      callback();
+    },1000);
+    return;
+  }
+
+  // 通常
+  let i=0;
+  let interval=setInterval(()=>{
+    document.getElementById("result").innerHTML =
+      "<h1>🐤🐤🐤</h1><p>召喚中...</p>";
+    i++;
+    if(i>10){
+      clearInterval(interval);
+      callback();
+    }
+  },100);
+}
+
+// 結果
+function showResult(){
+
+  const table={
+    bird:[
+      {title:"🐤 純粋な小鳥", desc:"優しい存在", rarity:"R"},
+      {title:"🪶 羽の使い手", desc:"飛べるかも", rarity:"SR"},
+      {title:"🌿 森の小鳥", desc:"自然と一体", rarity:"SSR"}
+    ],
+    chaos:[
+      {title:"🌀 カオス存在", desc:"意味不明", rarity:"R"},
+      {title:"🎭 バグ人格", desc:"毎回違う", rarity:"SR"},
+      {title:"🔁 無限ループ者", desc:"終わらない", rarity:"SSR"}
+    ],
+    dark:[
+      {title:"🔥 異教徒", desc:"危険", rarity:"R"},
+      {title:"💀 闇の住人", desc:"深淵", rarity:"SR"},
+      {title:"🩸 危険人物", desc:"近づくな", rarity:"SSR"}
+    ],
+    god:[
+      {title:"👑 教祖候補", desc:"導く者", rarity:"SR"},
+      {title:"✨ 神官", desc:"選ばれし", rarity:"SSR"},
+      {title:"🌟 光の教祖", desc:"信者増加中", rarity:"SSR+"}
+    ],
+    void:[
+      {title:"🫥 虚無存在", desc:"存在しない", rarity:"R"},
+      {title:"👁 観測対象", desc:"見られてる", rarity:"SR"},
+      {title:"📦 折りたたまれし存在", desc:"終わり", rarity:"SSR"}
+    ]
+  };
+
+  let max="bird";
+  for(let k in type){
+    if(type[k]>type[max]) max=k;
+  }
+
+  let list=table[max];
+  resultObj=list[Math.floor(Math.random()*list.length)];
+
+  // 👑 SSR+
+  if(Math.random()<0.03){
+    resultObj={title:"👑 真・教祖", desc:"すべてを知る", rarity:"SSR+"};
+  }
+
+  // 🌌 UR（超レア）
+  if(Math.random()<0.01){
+    resultObj={title:"🌌 神を超えた小鳥", desc:"この世界の外側", rarity:"UR"};
+  }
+
+  gachaEffect(resultObj.rarity, showFinal);
+}
+
+// 表示
+function showFinal(){
+  document.getElementById("question").innerHTML="";
+  document.getElementById("choices").innerHTML="";
+
+  document.getElementById("result").innerHTML=
+    `<h1>${resultObj.title}</h1>
+     <h2>【${resultObj.rarity}】</h2>
+     <p>${resultObj.desc}</p>`;
+}
+
+// シェア
+function share(){
+  if(!resultObj)return;
+  let text = resultObj.title+"【"+resultObj.rarity+"】";
+  window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text));
+}
+
+function shareLine(){
+  if(!resultObj)return;
+  let text = resultObj.title+"【"+resultObj.rarity+"】";
+  location.href="https://social-plugins.line.me/lineit/share?text="
+  +encodeURIComponent(text+" "+location.href);
+}
+
+showQuestion();
+</script>
+
+</body>
+</html>
