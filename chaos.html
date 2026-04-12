@@ -281,8 +281,19 @@ function share(){
 function shareLine(){
   if(!resultObj)return;
   let text=resultObj.title+"【"+resultObj.rarity+"】";
-  location.href="https://social-plugins.line.me/lineit/share?text="
-  +encodeURIComponent(text+" https://weiguanmeiqin-prog.github.io/kotori-religion/chaos.html");
+  function shareLine(){
+  if(!resultObj) return;
+
+  let text = resultObj.title + "【" + resultObj.rarity + "】";
+  let url = "https://weiguanmeiqin-prog.github.io/kotori-religion/chaos.html";
+
+  let shareUrl = "https://social-plugins.line.me/lineit/share?url="
+                + encodeURIComponent(url)
+                + "&text="
+                + encodeURIComponent(text);
+
+  window.open(shareUrl, "_blank");
+}
 }
 
 showQuestion();
