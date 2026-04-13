@@ -289,13 +289,14 @@ function win(){
   coin += 30;
   player.exp += 20;
 
-  if(player.exp >= player.level*50){
-    player.level++;
-    player.exp = 0;
-    player.power += 3;
-    player.maxHp += 10;
-    alert("レベルアップ！！🎉");
-  }
+  while(player.exp >= player.level*50){
+  player.exp -= player.level*50; // ←余り残す
+  player.level++;
+  player.power += 3;
+  player.maxHp += 10;
+
+  log("🎉 レベルアップ！ Lv" + player.level);
+}
 
   owned[selectedIndex] = player;
   localStorage.setItem("birds", JSON.stringify(owned));
