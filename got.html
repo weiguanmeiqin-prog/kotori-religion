@@ -20,14 +20,16 @@
         .r { border: 1px solid #cd7f32; color: #ffa500; }
         .bonus-tag { font-size: 10px; color: lime; display: block; margin-top: 5px; }
         @keyframes shine { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
-        .back-btn { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; background: gold; color: black; border-radius: 50px; font-weight: bold; text-decoration: none; }
+        /* game.htmlへ戻るためのボタン */
+        .back-btn { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; background: gold; color: black; border-radius: 50px; font-weight: bold; text-decoration: none; box-shadow: 0 4px 15px rgba(255,215,0,0.5); }
     </style>
 </head>
 <body>
     <h1>📜 聖なる宝物庫</h1>
-    <div id="status" style="margin-top:20px;">あなたの功績を確認中...</div>
+    <div id="status" style="margin-top:20px;">功績を確認中...</div>
     <div id="set-bonus" style="color:cyan; font-weight:bold; margin:10px;"></div>
     <div class="item-list" id="item-list"></div>
+    
     <a href="game.html" class="back-btn">聖戦へ戻る</a>
 
     <script>
@@ -50,7 +52,7 @@
                     const listDiv = document.getElementById('item-list');
                     listDiv.innerHTML = "";
                     const data = snap.val();
-                    if (!data) { document.getElementById('status').innerText = "まだ宝物はありません"; return; }
+                    if (!data) { document.getElementById('status').innerText = "宝物なし"; return; }
                     
                     document.getElementById('status').innerText = "所持アイテム一覧（重複は力なり）";
                     let counts = {};
@@ -69,6 +71,8 @@
                         document.getElementById('set-bonus').innerText = "✨ 【セット発動】伝説の師弟：ATK +50% ✨";
                     }
                 });
+            } else {
+                document.getElementById('status').innerText = "ログインが必要です";
             }
         });
     </script>
