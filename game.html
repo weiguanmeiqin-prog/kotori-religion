@@ -1,171 +1,75 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐤 真・小鳥教聖戦オンライン</title>
-    <script src="http://192.168.1.30:3000/socket.io/socket.io.js"></script>
+    <title>🐤 小鳥教：Firebase聖戦</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
     <style>
-        body { background: #000; color: #fff; text-align: center; font-family: sans-serif; margin: 0; padding-bottom: 50px; }
-        .info-bar { background: gold; color: black; padding: 5px; font-size: 12px; font-weight: bold; }
-        
-        /* HPバー共通 */
-        .bar-container { width: 90%; max-width: 400px; height: 25px; background: #333; margin: 10px auto; border: 2px solid #555; border-radius: 15px; overflow: hidden; position: relative; }
-        .fill { height: 100%; transition: 0.3s; }
-        .enemy-fill { background: linear-gradient(90deg, #ff0000, #990000); }
-        .my-fill { background: linear-gradient(90deg, #00ff00, #006600); }
-        .bar-text { position: absolute; width: 100%; top: 0; left: 0; font-size: 14px; line-height: 25px; text-shadow: 1px 1px 2px #000; }
-
-        /* 操作パネル */
-        .panel { background: #222; border: 2px gold solid; margin: 10px; padding: 15px; border-radius: 15px; }
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        button { padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; }
-        .btn-atk { background: #e74c3c; color: white; }
-        .btn-heal { background: #2ecc71; color: white; }
-        .btn-sp { background: #f1c40f; color: black; grid-column: span 2; }
-        button:disabled { background: #555; cursor: not-allowed; }
-
-        /* ランキング */
-        #rankingBox { text-align: left; background: rgba(255,255,255,0.1); margin: 15px; padding: 10px; font-size: 14px; border-radius: 10px; }
-        .rank-item { display: flex; justify-content: space-between; border-bottom: 1px solid #444; }
-        #log { height: 80px; overflow-y: auto; color: #aaa; font-size: 12px; margin: 10px; }
+        body{ background:black; color:white; text-align:center; font-family:sans-serif; margin:0; }
+        .bar{ width:250px; height:30px; background:#333; margin:20px auto; border:2px solid gold; border-radius:15px; overflow:hidden; }
+        .hp{ height:100%; background:red; width:100%; transition: width 0.3s; }
+        button{ padding:20px 40px; font-size:20px; border-radius:50px; background:gold; color:black; border:none; font-weight:bold; }
+        #log{ height:150px; overflow-y:auto; background:rgba(255,215,0,0.1); margin:20px; padding:10px; font-size:14px; color:gold; }
     </style>
 </head>
 <body>
+    <h1>🐤 Firebase共闘聖戦</h1>
+    <div class="bar"><div id="eBar" class="hp"></div></div>
+    <h3 id="eHPText">1000 / 1000</h3>
+    <button onclick="attack()">聖なる突撃！！</button>
+    <div id="log">ログ待機中...</div>
 
-<div class="info-bar">🌐 参戦中の信者: <span id="playerCount">0</span>人</div>
+    <script>
+        // 【ここを書き換えて！】Firebaseの画面に出ている config をそのまま貼る
+        const firebaseConfig = {
+            apiKey: "あなたのAPIキー",
+            authDomain: "あなたのドメイン",
+            databaseURL: "あなたのデータベースURL",
+            projectId: "あなたのプロジェクトID",
+            storageBucket: "あなたのバケット",
+            messagingSenderId: "あなたのID",
+            appId: "あなたのAPP ID"
+        };
 
-<div id="gachaArea" class="panel">
-    <h3>🐣 聖なる小鳥ガチャ</h3>
-    <button onclick="drawGacha()" style="background:gold; width:100%;">ガチャを回して参戦！</button>
-</div>
+        // Firebase初期化
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const hpRef = database.ref('enemyHP');
 
-<div id="battleArea" style="display:none">
-    <div class="panel">
-        <h2 id="eName">真・偽教祖</h2>
-        <div class="bar-container"><div id="eBar" class="fill enemy-fill"></div><div id="eText" class="bar-text"></div></div>
-        
-        <hr style="border:0; border-top:1px solid #444; margin:20px 0;">
-        
-        <h3 id="myBirdDisplay">自分の小鳥</h3>
-        <div class="bar-container"><div id="pBar" class="fill my-fill"></div><div id="pText" class="bar-text"></div></div>
-        
-        <div class="controls" id="actionBtns">
-            <button class="btn-atk" onclick="sendAction('attack')">通常攻撃</button>
-            <button class="btn-heal" onclick="reHeal()">自己回復</button>
-            <button class="btn-sp" id="spBtn" onclick="sendAction('special')">✨ 聖なる奥義 ✨</button>
-        </div>
-        <div id="deadNotice" style="display:none; color:red; font-weight:bold; margin-top:10px;">
-            👼 力尽きました...<br>
-            <button onclick="resurrect()" style="background:white; color:black; margin-top:10px;">復活の儀式 (5秒)</button>
-        </div>
-    </div>
+        // データの初期化（もしデータがなければ1000にする）
+        hpRef.on('value', (snapshot) => {
+            let hp = snapshot.val();
+            if (hp === null) {
+                hp = 1000;
+                hpRef.set(1000);
+            }
+            updateDisplay(hp);
+        });
 
-    <div id="rankingBox">
-        <strong>🏆 貢献度ランキング</strong>
-        <div id="rankList"></div>
-    </div>
-</div>
+        function attack() {
+            hpRef.transaction((currentHP) => {
+                let dmg = Math.floor(Math.random() * 20) + 10;
+                log(`🔥 あなたが ${dmg}ダメ！`);
+                return (currentHP || 1000) - dmg;
+            });
+        }
 
-<div id="log"></div>
+        function updateDisplay(hp) {
+            document.getElementById("eBar").style.width = (hp / 1000) * 100 + "%";
+            document.getElementById("eHPText").innerText = hp + " / 1000";
+            if(hp <= 0) {
+                document.getElementById("eHPText").innerText = "討伐完了！";
+                setTimeout(() => hpRef.set(1000), 5000); // 5秒後に復活
+            }
+        }
 
-<script>
-    const socket = io("http://192.168.1.30:3000");
-    let myBird = { name: "", power: 1 };
-    let myHP = 500;
-    let maxHP = 500;
-    let isDead = false;
-
-    // ガチャ
-    function drawGacha() {
-        const birds = [
-            {n: "火炎鳥", p: 1.5}, {n: "癒しスズメ", p: 0.8}, 
-            {n: "黄金の鷹", p: 2.0}, {n: "普通の鳩", p: 1.0}
-        ];
-        let res = birds[Math.floor(Math.random() * birds.length)];
-        myBird = { name: res.n, power: res.p };
-        document.getElementById("myBirdDisplay").innerText = "使用中: " + myBird.name;
-        document.getElementById("gachaArea").style.display = "none";
-        document.getElementById("battleArea").style.display = "block";
-        addLog("🛡️ 戦場に突入した！");
-    }
-
-    // アクション送信
-    function sendAction(type) {
-        if (isDead) return;
-        socket.emit('action', { sender: myBird.name, type: type, power: myBird.power });
-    }
-
-    // 自己回復（クライアント側のみで完結）
-    function reHeal() {
-        if (isDead) return;
-        myHP = Math.min(maxHP, myHP + 100);
-        updateMyUI();
-        addLog("💚 自分で回復した！");
-    }
-
-    // 復活
-    function resurrect() {
-        addLog("⏳ 復活の呪文を唱えています...");
-        setTimeout(() => {
-            myHP = maxHP;
-            isDead = false;
-            updateMyUI();
-            addLog("✨ 復活した！");
-        }, 5000);
-    }
-
-    // 敵の攻撃受信
-    socket.on('enemy-attack', (data) => {
-        if (isDead) return;
-        myHP -= data.damage;
-        if (myHP <= 0) { myHP = 0; isDead = true; }
-        updateMyUI();
-        addLog("⚠️ 敵の全体攻撃！ " + data.damage + " ダメージ！");
-    });
-
-    socket.on('update-status', (data) => {
-        updateEnemyUI(data.enemy);
-        updateRanking(data.ranking);
-    });
-
-    socket.on('init-game', (data) => {
-        updateEnemyUI(data.enemy);
-        updateRanking(data.ranking);
-    });
-
-    socket.on('update-players', (count) => {
-        document.getElementById("playerCount").innerText = count;
-    });
-
-    socket.on('victory', (data) => {
-        alert("🎉 偽教祖が倒されました！ トドメ: " + data.winner);
-    });
-
-    function updateEnemyUI(enemy) {
-        document.getElementById("eBar").style.width = (enemy.hp / enemy.maxHp) * 100 + "%";
-        document.getElementById("eText").innerText = enemy.hp + " / " + enemy.maxHp;
-    }
-
-    function updateMyUI() {
-        document.getElementById("pBar").style.width = (myHP / maxHP) * 100 + "%";
-        document.getElementById("pText").innerText = myHP + " / " + maxHP;
-        document.getElementById("actionBtns").style.display = isDead ? "none" : "grid";
-        document.getElementById("deadNotice").style.display = isDead ? "block" : "none";
-    }
-
-    function updateRanking(ranking) {
-        let sorted = Object.entries(ranking).sort((a,b) => b[1] - a[1]).slice(0, 5);
-        document.getElementById("rankList").innerHTML = sorted.map(([name, dmg], i) => 
-            `<div class="rank-item"><span>${i+1}位: ${name}</span><span>${dmg}点</span></div>`
-        ).join('');
-    }
-
-    function addLog(m) {
-        let l = document.getElementById("log");
-        l.innerHTML = `<div>${m}</div>` + l.innerHTML;
-    }
-</script>
+        function log(t) {
+            let l = document.getElementById("log");
+            l.innerHTML = `<div>${t}</div>` + l.innerHTML;
+        }
+    </script>
 </body>
 </html>
-
