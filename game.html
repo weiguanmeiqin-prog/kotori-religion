@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐤 小鳥教：メガモン聖戦</title>
+    <title>🐤 小鳥教：聖戦</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
@@ -24,7 +24,7 @@
 <body>
     <div id="notification" class="alert-flash">🚨 決戦開始！偽教祖を包囲せよ！！ 🚨</div>
 
-    <h1>🐤 小鳥教：メガモン聖戦</h1>
+    <h1>🐤 小鳥教：聖戦</h1>
 
     <div id="waiting-area">
         <h2 id="wait-status">次なる神託を待機中...</h2>
@@ -116,7 +116,7 @@
             document.getElementById('battle-area').style.display = 'block';
             document.getElementById('notification').style.display = 'block';
             hpRef.set(1000); 
-            log("🚨 降臨時刻！メガ偽教祖が現れた！");
+            log("🚨 降臨時刻！偽教祖が現れた！");
         }
 
         hpRef.on('value', (snapshot) => {
