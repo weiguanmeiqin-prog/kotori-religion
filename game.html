@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐤 小鳥教：決戦聖戦</title>
+    <title>🐤 小鳥教：メガモン聖戦</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
@@ -24,14 +24,14 @@
 <body>
     <div id="notification" class="alert-flash">🚨 決戦開始！偽教祖を包囲せよ！！ 🚨</div>
 
-    <h1>🐤 小鳥教：決戦聖戦</h1>
+    <h1>🐤 小鳥教：メガモン聖戦</h1>
 
     <div id="waiting-area">
-        <h2 id="wait-status">偽教祖の出現を予測中...</h2>
+        <h2 id="wait-status">次なる神託を待機中...</h2>
         <div id="countdown-area" style="display:none;">
-            <p>【降臨予告】</p>
+            <p style="color:red; font-weight:bold;">【偽教祖 降臨予告】</p>
             <div id="target-time" style="font-size: 18px; color: gold; margin-bottom: 5px;"></div>
-            <div class="timer-box">決戦まで: <span id="timer-text">--:--</span></div>
+            <div class="timer-box">降臨まで: <span id="timer-text">--:--</span></div>
         </div>
     </div>
 
@@ -64,23 +64,22 @@
         let nextSpawnTime = 0;
         let isFighting = false;
 
+        // データの監視
         eventRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data && data.spawnTime) {
                 nextSpawnTime = data.spawnTime;
                 const date = new Date(nextSpawnTime);
-                document.getElementById('target-time').innerText = `降臨時刻：${date.getHours()}時${date.getMinutes()}分`;
+                document.getElementById('target-time').innerText = `降臨予定：${date.getHours()}時${date.getMinutes()}分`;
                 document.getElementById('countdown-area').style.display = 'block';
                 document.getElementById('wait-status').innerText = "偽教祖、降臨の兆しあり。";
-                
-                // もし既に時間が過ぎていたら（かつHPが残っていたら）途中参加
-                const now = Date.now();
-                if (nextSpawnTime <= now) {
-                   checkBattleJoin();
-                }
+            } else {
+                // 時間が決まっていない場合は、誰かが代表してランダムに決める
+                setRandomSpawn();
             }
         });
 
+        // 1秒ごとにカウントダウン
         setInterval(() => {
             if (nextSpawnTime === 0 || isFighting) return;
             const now = Date.now();
@@ -95,21 +94,29 @@
             }
         }, 1000);
 
+        // --- 🧪 教祖の采配：ランダム出現時間をFirebaseにセット ---
+        function setRandomSpawn() {
+            // 他の人が同時にセットしないよう、既にセットされていたら何もしない
+            eventRef.transaction((currentData) => {
+                if (currentData) return; // 既に誰かが決めた
+
+                // 【設定】1分後〜5分後の間でランダムに決める（ここを好きな時間に変えてね）
+                const waitMin = 1 * 60 * 1000;
+                const waitMax = 5 * 60 * 1000;
+                const randomWait = Math.floor(Math.random() * (waitMax - waitMin)) + waitMin;
+                
+                return { spawnTime: Date.now() + randomWait };
+            });
+        }
+
         function startBattle() {
             if(isFighting) return;
             isFighting = true;
             document.getElementById('waiting-area').style.display = 'none';
             document.getElementById('battle-area').style.display = 'block';
             document.getElementById('notification').style.display = 'block';
-            log("🚨 降臨時刻！聖戦を開始します！");
-        }
-
-        // 途中参加用のチェック
-        function checkBattleJoin() {
-            hpRef.once('value', (snap) => {
-                const hp = snap.val();
-                if(hp > 0) startBattle();
-            });
+            hpRef.set(1000); 
+            log("🚨 降臨時刻！メガ偽教祖が現れた！");
         }
 
         hpRef.on('value', (snapshot) => {
@@ -134,8 +141,11 @@
             document.getElementById('battle-area').style.display = 'none';
             document.getElementById('notification').style.display = 'none';
             document.getElementById('countdown-area').style.display = 'none';
-            document.getElementById('wait-status').innerText = "偽教祖は退散しました。平和な時が流れています。";
-            log("🎊 討伐完了！次なる神託を待て。");
+            document.getElementById('wait-status').innerText = "偽教祖は浄化されました。";
+            log("🎊 討伐完了！平和が訪れた。");
+            
+            // 倒したらFirebaseの時間を空にする（すると自動で次の抽選が始まる）
+            eventRef.set(null);
         }
 
         function updateDisplay(hp) {
