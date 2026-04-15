@@ -3,59 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐤 小鳥教：ターン制聖戦</title>
+    <title>🐤 小鳥教：聖戦＆ガチャ統合聖典</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
 
     <style>
-        body{ background:black; color:white; text-align:center; font-family:sans-serif; margin:0; overflow-x:hidden; }
+        body{ background:black; color:white; text-align:center; font-family:sans-serif; margin:0; }
         .bar{ width:250px; height:20px; background:#333; margin:10px auto; border:2px solid gold; border-radius:10px; overflow:hidden; }
         .hp{ height:100%; background:lime; width:100%; transition: width 0.3s; }
         .e-hp{ background:red; }
         
-        button{ padding:12px 20px; font-size:16px; border-radius:10px; background:gold; color:black; border:none; font-weight:bold; margin:5px; cursor:pointer; }
-        button:disabled { background: #555; cursor: not-allowed; }
+        button{ padding:12px 20px; font-size:16px; border-radius:10px; background:gold; color:black; border:none; font-weight:bold; margin:5px; cursor:pointer; box-shadow: 0 3px #b8860b; }
+        button:disabled { background: #555; cursor: not-allowed; box-shadow: none; }
         
-        /* 敵の画像 */
-        #enemy-img { width: 150px; height: 150px; border-radius: 50%; border: 5px solid red; margin-top: 10px; object-fit: cover; }
+        #enemy-img { width: 160px; height: 160px; border-radius: 50%; border: 5px solid red; margin-top: 10px; object-fit: cover; box-shadow: 0 0 15px red; }
         .shake { animation: shake 0.5s; }
         @keyframes shake { 0% {transform:translateX(0)} 25% {transform:translateX(5px)} 50% {transform:translateX(-5px)} 100% {transform:translateX(0)} }
 
-        #log{ height:120px; overflow-y:auto; background:rgba(255,215,0,0.1); margin:10px; padding:10px; font-size:14px; color:gold; text-align:left; border: 1px solid #333; }
+        #log{ height:120px; overflow-y:auto; background:rgba(255,215,0,0.1); margin:10px; padding:10px; font-size:13px; color:gold; text-align:left; border: 1px solid #444; }
         
-        /* 勝利・ログイン画面 */
         .overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:2000; }
         .hidden { display: none !important; }
         
-        #waiting-area { padding: 40px; }
-        .timer-box { font-size: 24px; color: gold; border: 1px solid gold; padding: 10px; display: inline-block; }
+        #status-bar { background: #222; padding: 10px; border-bottom: 2px solid gold; sticky: top; }
+        
+        /* ガチャ・コレクション */
+        .card { background: #111; border: 1px solid gold; margin: 10px; padding: 15px; border-radius: 10px; }
+        #collection { font-size: 12px; color: #ccc; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div id="login-overlay" class="overlay">
-        <img src="kotori.jpeg" style="width:100px; border-radius:50%;">
-        <h2>🐤 小鳥教：聖戦録</h2>
-        <input type="text" id="user-name" placeholder="信者名を入力" style="padding:10px; font-size:18px; text-align:center;">
-        <button onclick="login()">聖域へ入る</button>
+        <img src="kotori.jpeg" style="width:120px; border-radius:50%; border:2px solid gold; margin-bottom:15px;">
+        <h2>🐤 小鳥教：オンライン聖域</h2>
+        <input type="text" id="user-name" placeholder="信者名" style="padding:10px; font-size:18px; text-align:center; border-radius:10px;">
+        <br>
+        <button onclick="login()">ログイン</button>
     </div>
 
     <div id="victory-overlay" class="overlay hidden">
-        <h1 style="color:gold; font-size:40px;">🎊 聖戦勝利 🎊</h1>
+        <h1 style="color:gold;">🎊 浄化完了 🎊</h1>
         <p id="reward-text" style="font-size:20px;"></p>
-        <button onclick="backToWait()">次なる降臨を待つ</button>
+        <button onclick="backToWait()">戻る</button>
     </div>
 
-    <h1>🐤 聖戦：ターン制</h1>
-    <div id="status-bar">💰 コイン: <span id="my-coins">0</span> | ❤️ 私のHP: <span id="my-hp">100</span></div>
+    <div id="status-bar">
+        💰 コイン: <span id="my-coins">0</span> | ❤️ HP: <span id="my-hp">100</span>
+    </div>
 
     <div id="waiting-area">
-        <h2 id="wait-status">平和な時間が流れています...</h2>
-        <div id="countdown-area" style="display:none;">
-            <p style="color:red; font-weight:bold;">⚠️ 偽教祖 接近中 ⚠️</p>
-            <div class="timer-box">降臨まで: <span id="timer-text">--:--</span></div>
+        <div id="countdown-area" style="display:none; background:rgba(255,0,0,0.2); padding:10px;">
+            <p style="color:red; font-weight:bold; margin:5px;">⚠️ 偽教祖 接近中 ⚠️</p>
+            <div style="font-size:24px; color:gold;"><span id="timer-text">--:--</span></div>
         </div>
+
+        <div class="card">
+            <h3>🎁 聖なるガチャ</h3>
+            <p style="font-size:12px;">1回 100コイン</p>
+            <div id="gacha-result" style="font-size:20px; color:cyan; margin:10px;">？？？</div>
+            <button id="btn-gacha" onclick="playGacha()">ガチャを回す</button>
+            <div id="collection">【所持品】<span id="my-items">なし</span></div>
+        </div>
+
+        <h2 id="wait-status" style="font-size:16px; color:#888;">平和な時間が流れています...</h2>
     </div>
 
     <div id="battle-area" class="hidden">
@@ -63,16 +75,16 @@
         <h3 id="eName" style="color:red; margin:5px;">🔥 偽教祖 🔥</h3>
         <div class="bar"><div id="eBar" class="hp e-hp"></div></div>
         <p id="eHPText">--- / ---</p>
-        
         <div id="actions">
             <button id="btn-atk" onclick="playerAction('attack')">通常攻撃</button>
-            <button id="btn-skill" onclick="playerAction('skill')">聖なる光 (強)</button>
+            <button id="btn-heal" onclick="playerAction('heal')" style="background:lime;">祈る</button>
         </div>
     </div>
 
     <div id="log"></div>
 
     <script>
+        // --- Firebase設定（教祖様のキー） ---
         const firebaseConfig = {
             apiKey: "AIzaSyCJX2ggw5ZlDzdkK8YjsuEneVi9etA3mQ4",
             authDomain: "bird-battle-online.firebaseapp.com",
@@ -94,9 +106,9 @@
         let myHP = 100;
         let myCoins = 0;
         let isFighting = false;
-        let canAction = true;
         let nextSpawnTime = 0;
 
+        // ログイン処理
         function login() {
             const name = document.getElementById('user-name').value;
             if (!name) return alert("名乗れ！");
@@ -108,65 +120,69 @@
         }
 
         function initGame() {
-            // コインの読み込み
-            const coinRef = database.ref('users/' + auth.currentUser.uid + '/coins');
-            coinRef.on('value', snap => {
-                myCoins = snap.val() || 0;
+            const userRef = database.ref('users/' + auth.currentUser.uid);
+            
+            // 共通コイン & アイテムの監視
+            userRef.on('value', snap => {
+                const data = snap.val() || {};
+                myCoins = data.coins || 0;
                 document.getElementById('my-coins').innerText = myCoins;
+                document.getElementById('my-items').innerText = data.items ? Object.values(data.items).join(", ") : "なし";
             });
 
-            // イベント監視
+            // メガモン降臨監視
             eventRef.on('value', snap => {
                 const data = snap.val();
                 if (data && data.spawnTime) {
                     nextSpawnTime = data.spawnTime;
                     document.getElementById('countdown-area').style.display = 'block';
-                    document.getElementById('wait-status').innerText = "神託が下りました。";
                 } else {
                     setRandomSpawn();
                 }
             });
 
-            // ログ監視
+            // バトルログ監視
             logRef.on('child_added', snap => {
                 const data = snap.val();
                 addLog(`[${data.type}] ${data.msg}`);
                 if(data.type === "ENEMY") {
-                    myHP -= data.dmg;
-                    if(myHP < 0) myHP = 0;
+                    myHP = Math.max(0, myHP - data.dmg);
                     document.getElementById('my-hp').innerText = myHP;
-                    if(myHP <= 0) {
-                        canAction = false;
-                        addLog("😵 あなたは力尽きた...（復活を待て）");
-                        setTimeout(() => { myHP = 100; canAction = true; document.getElementById('my-hp').innerText = myHP; }, 10000);
-                    }
+                    if(myHP <= 0) setTimeout(() => { myHP = 100; document.getElementById('my-hp').innerText = myHP; }, 8000);
                 }
             });
 
-            // HP監視
+            // 敵HP監視
             hpRef.on('value', snap => {
-                let hp = snap.val();
-                updateDisplay(hp || 0);
+                let hp = snap.val() || 0;
+                document.getElementById("eBar").style.width = (hp / 1000) * 100 + "%";
+                document.getElementById("eHPText").innerText = `${hp} / 1000`;
                 if (hp <= 0 && isFighting) win();
             });
         }
 
-        setInterval(() => {
-            if (nextSpawnTime === 0 || isFighting) return;
-            const diff = nextSpawnTime - Date.now();
-            if (diff <= 0) startBattle();
-            else {
-                const min = Math.floor(diff / 60000);
-                const sec = Math.floor((diff % 60000) / 1000);
-                document.getElementById('timer-text').innerText = `${min}:${sec}`;
-            }
-        }, 1000);
+        // --- ガチャシステム（ログインボーナスのコインと共通） ---
+        function playGacha() {
+            if (myCoins < 100) return alert("コインが足りない！聖戦で稼ぐのだ。");
+            
+            // 消費
+            database.ref('users/' + auth.currentUser.uid + '/coins').transaction(c => c - 100);
 
+            const list = ["SSR：黄金の小鳥像", "SR：銀の羽根ペン", "R：聖なる種", "N：抜け落ちた羽", "N：ただの石"];
+            const res = list[Math.floor(Math.random() * list.length)];
+
+            document.getElementById('gacha-result').innerText = "召喚中...";
+            setTimeout(() => {
+                document.getElementById('gacha-result').innerText = `✨ ${res} ✨`;
+                // アイテム保存
+                database.ref('users/' + auth.currentUser.uid + '/items').push(res);
+                addLog(`🎁 ${myName}がガチャで「${res}」を手に入れた！`);
+            }, 800);
+        }
+
+        // --- 聖戦システム ---
         function setRandomSpawn() {
-            eventRef.transaction(curr => {
-                if (curr) return;
-                return { spawnTime: Date.now() + 60000 }; // 1分後固定（テスト用）
-            });
+            eventRef.transaction(c => c ? c : { spawnTime: Date.now() + (Math.random()*240000 + 60000) });
         }
 
         function startBattle() {
@@ -179,46 +195,33 @@
         }
 
         function playerAction(type) {
-            if(!canAction || myHP <= 0) return;
-            let dmg = type === 'attack' ? Math.floor(Math.random() * 20) + 10 : Math.floor(Math.random() * 40) + 20;
-            
-            // 敵のHPを減らす
-            hpRef.transaction(curr => (curr || 1000) - dmg);
-            
-            // ログ送信
-            database.ref('battleLog').push({ type: "PLAYER", name: myName, dmg: dmg, msg: `${myName}の${type === 'attack' ? '通常攻撃' : '聖なる光'}！ ${dmg}のダメージ！` });
-            
-            // クールタイム（ターン制っぽく）
-            canAction = false;
-            document.getElementById('btn-atk').disabled = true;
-            document.getElementById('btn-skill').disabled = true;
-            document.getElementById('enemy-img').classList.add('shake');
-            setTimeout(() => {
-                document.getElementById('enemy-img').classList.remove('shake');
-                canAction = true;
-                document.getElementById('btn-atk').disabled = false;
-                document.getElementById('btn-skill').disabled = false;
-            }, 1000);
+            if(myHP <= 0) return;
+            if(type === 'attack') {
+                let d = Math.floor(Math.random()*20)+15;
+                hpRef.transaction(c => c - d);
+                database.ref('battleLog').push({type:"PLAYER", msg:`${myName}の攻撃！ ${d}ダメ！`});
+                document.getElementById('enemy-img').classList.add('shake');
+                setTimeout(()=>document.getElementById('enemy-img').classList.remove('shake'), 400);
+            } else {
+                myHP = Math.min(100, myHP + 30);
+                document.getElementById('my-hp').innerText = myHP;
+                database.ref('battleLog').push({type:"HEAL", msg:`${myName}の祈り！ HP回復！`});
+            }
         }
 
-        // 敵のターン（5秒に1回全員を攻撃）
         function enemyAI() {
             if(!isFighting) return;
             setTimeout(() => {
                 if(!isFighting) return;
-                let dmg = Math.floor(Math.random() * 15) + 5;
-                database.ref('battleLog').push({ type: "ENEMY", dmg: dmg, msg: `偽教祖の反撃！ 全員に ${dmg} のダメージ！` });
+                database.ref('battleLog').push({type:"ENEMY", dmg:10, msg:"偽教祖の反撃！ 全員10ダメ！"});
                 enemyAI();
             }, 5000);
         }
 
         function win() {
             isFighting = false;
-            // コイン付与
-            const reward = 50;
-            database.ref('users/' + auth.currentUser.uid + '/coins').transaction(curr => (curr || 0) + reward);
-            
-            document.getElementById('reward-text').innerText = `偽教祖を倒した！\n小鳥コインを ${reward}枚 獲得！`;
+            database.ref('users/' + auth.currentUser.uid + '/coins').transaction(c => (c || 0) + 150);
+            document.getElementById('reward-text').innerText = `聖戦勝利！\n150コイン 獲得しました！`;
             document.getElementById('victory-overlay').classList.remove('hidden');
         }
 
@@ -229,10 +232,12 @@
             eventRef.set(null);
         }
 
-        function updateDisplay(hp) {
-            document.getElementById("eBar").style.width = (hp / 1000) * 100 + "%";
-            document.getElementById("eHPText").innerText = `${hp} / 1000`;
-        }
+        setInterval(() => {
+            if (nextSpawnTime === 0 || isFighting) return;
+            const diff = nextSpawnTime - Date.now();
+            if (diff <= 0) startBattle();
+            else document.getElementById('timer-text').innerText = Math.floor(diff/1000) + "s";
+        }, 1000);
 
         function addLog(t) {
             let l = document.getElementById("log");
