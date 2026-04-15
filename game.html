@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐤 小鳥教：Firebase聖戦</title>
+    <title>🐤 小鳥教：決戦聖戦</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
@@ -11,59 +11,136 @@
         body{ background:black; color:white; text-align:center; font-family:sans-serif; margin:0; }
         .bar{ width:250px; height:30px; background:#333; margin:20px auto; border:2px solid gold; border-radius:15px; overflow:hidden; }
         .hp{ height:100%; background:red; width:100%; transition: width 0.3s; }
-        button{ padding:20px 40px; font-size:20px; border-radius:50px; background:gold; color:black; border:none; font-weight:bold; }
-        #log{ height:150px; overflow-y:auto; background:rgba(255,215,0,0.1); margin:20px; padding:10px; font-size:14px; color:gold; }
+        button{ padding:20px 40px; font-size:20px; border-radius:50px; background:gold; color:black; border:none; font-weight:bold; box-shadow: 0 5px #b8860b; }
+        button:active{ transform:translateY(3px); box-shadow: 0 2px #b8860b; }
+        #log{ height:150px; overflow-y:auto; background:rgba(255,215,0,0.1); margin:20px; padding:10px; font-size:14px; color:gold; border-radius:10px; }
+        
+        #waiting-area { padding: 50px; }
+        .timer-box { font-size: 30px; color: gold; border: 1px solid gold; padding: 10px; display: inline-block; margin-top: 10px; }
+        .alert-flash { background: red; color: white; padding: 10px; font-weight: bold; animation: blink 0.5s infinite; display: none; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
-    <h1>🐤 Firebase共闘聖戦</h1>
-    <div class="bar"><div id="eBar" class="hp"></div></div>
-    <h3 id="eHPText">1000 / 1000</h3>
-    <button onclick="attack()">聖なる突撃！！</button>
-    <div id="log">ログ待機中...</div>
+    <div id="notification" class="alert-flash">🚨 決戦開始！偽教祖を包囲せよ！！ 🚨</div>
+
+    <h1>🐤 小鳥教：決戦聖戦</h1>
+
+    <div id="waiting-area">
+        <h2 id="wait-status">偽教祖の出現を予測中...</h2>
+        <div id="countdown-area" style="display:none;">
+            <p>【降臨予告】</p>
+            <div id="target-time" style="font-size: 18px; color: gold; margin-bottom: 5px;"></div>
+            <div class="timer-box">決戦まで: <span id="timer-text">--:--</span></div>
+        </div>
+    </div>
+
+    <div id="battle-area" style="display:none;">
+        <h2 id="eName" style="color:red;">🔥 偽教祖 🔥</h2>
+        <div class="bar"><div id="eBar" class="hp"></div></div>
+        <h3 id="eHPText">Loading...</h3>
+        <button onclick="attack()">聖なる突撃！！</button>
+    </div>
+
+    <div id="log">教典を接続中...</div>
 
     <script>
-        // 【ここを書き換えて！】Firebaseの画面に出ている config をそのまま貼る
         const firebaseConfig = {
-            apiKey: "あなたのAPIキー",
-            authDomain: "あなたのドメイン",
-            databaseURL: "あなたのデータベースURL",
-            projectId: "あなたのプロジェクトID",
-            storageBucket: "あなたのバケット",
-            messagingSenderId: "あなたのID",
-            appId: "あなたのAPP ID"
+            apiKey: "AIzaSyCJX2ggw5ZlDzdkK8YjsuEneVi9etA3mQ4",
+            authDomain: "bird-battle-online.firebaseapp.com",
+            databaseURL: "https://bird-battle-online-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "bird-battle-online",
+            storageBucket: "bird-battle-online.firebasestorage.app",
+            messagingSenderId: "801450921560",
+            appId: "1:801450921560:web:a6b3b4993945f97f73c42d",
+            measurementId: "G-4MXK6ZZVNK"
         };
 
-        // Firebase初期化
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const hpRef = database.ref('enemyHP');
+        const eventRef = database.ref('eventData');
 
-        // データの初期化（もしデータがなければ1000にする）
+        let nextSpawnTime = 0;
+        let isFighting = false;
+
+        eventRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.spawnTime) {
+                nextSpawnTime = data.spawnTime;
+                const date = new Date(nextSpawnTime);
+                document.getElementById('target-time').innerText = `降臨時刻：${date.getHours()}時${date.getMinutes()}分`;
+                document.getElementById('countdown-area').style.display = 'block';
+                document.getElementById('wait-status').innerText = "偽教祖、降臨の兆しあり。";
+                
+                // もし既に時間が過ぎていたら（かつHPが残っていたら）途中参加
+                const now = Date.now();
+                if (nextSpawnTime <= now) {
+                   checkBattleJoin();
+                }
+            }
+        });
+
+        setInterval(() => {
+            if (nextSpawnTime === 0 || isFighting) return;
+            const now = Date.now();
+            const diff = nextSpawnTime - now;
+
+            if (diff <= 0) {
+                startBattle();
+            } else {
+                const min = Math.floor(diff / 60000);
+                const sec = Math.floor((diff % 60000) / 1000);
+                document.getElementById('timer-text').innerText = `${min}分${sec}秒`;
+            }
+        }, 1000);
+
+        function startBattle() {
+            if(isFighting) return;
+            isFighting = true;
+            document.getElementById('waiting-area').style.display = 'none';
+            document.getElementById('battle-area').style.display = 'block';
+            document.getElementById('notification').style.display = 'block';
+            log("🚨 降臨時刻！聖戦を開始します！");
+        }
+
+        // 途中参加用のチェック
+        function checkBattleJoin() {
+            hpRef.once('value', (snap) => {
+                const hp = snap.val();
+                if(hp > 0) startBattle();
+            });
+        }
+
         hpRef.on('value', (snapshot) => {
             let hp = snapshot.val();
-            if (hp === null) {
-                hp = 1000;
-                hpRef.set(1000);
+            updateDisplay(hp || 0);
+            if (hp <= 0 && isFighting) {
+                finishBattle();
             }
-            updateDisplay(hp);
         });
 
         function attack() {
+            if (!isFighting) return;
             hpRef.transaction((currentHP) => {
                 let dmg = Math.floor(Math.random() * 20) + 10;
-                log(`🔥 あなたが ${dmg}ダメ！`);
                 return (currentHP || 1000) - dmg;
             });
+        }
+
+        function finishBattle() {
+            isFighting = false;
+            document.getElementById('waiting-area').style.display = 'block';
+            document.getElementById('battle-area').style.display = 'none';
+            document.getElementById('notification').style.display = 'none';
+            document.getElementById('countdown-area').style.display = 'none';
+            document.getElementById('wait-status').innerText = "偽教祖は退散しました。平和な時が流れています。";
+            log("🎊 討伐完了！次なる神託を待て。");
         }
 
         function updateDisplay(hp) {
             document.getElementById("eBar").style.width = (hp / 1000) * 100 + "%";
             document.getElementById("eHPText").innerText = hp + " / 1000";
-            if(hp <= 0) {
-                document.getElementById("eHPText").innerText = "討伐完了！";
-                setTimeout(() => hpRef.set(1000), 5000); // 5秒後に復活
-            }
         }
 
         function log(t) {
