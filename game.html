@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐤 小鳥教：聖戦</title>
+    <title>🐤 小鳥教：信者名簿聖戦</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
 
     <style>
         body{ background:black; color:white; text-align:center; font-family:sans-serif; margin:0; }
         .bar{ width:250px; height:30px; background:#333; margin:20px auto; border:2px solid gold; border-radius:15px; overflow:hidden; }
         .hp{ height:100%; background:red; width:100%; transition: width 0.3s; }
-        button{ padding:20px 40px; font-size:20px; border-radius:50px; background:gold; color:black; border:none; font-weight:bold; box-shadow: 0 5px #b8860b; }
+        button{ padding:20px 40px; font-size:20px; border-radius:50px; background:gold; color:black; border:none; font-weight:bold; box-shadow: 0 5px #b8860b; cursor:pointer; }
         button:active{ transform:translateY(3px); box-shadow: 0 2px #b8860b; }
-        #log{ height:150px; overflow-y:auto; background:rgba(255,215,0,0.1); margin:20px; padding:10px; font-size:14px; color:gold; border-radius:10px; }
+        #log{ height:200px; overflow-y:auto; background:rgba(255,215,0,0.1); margin:20px; padding:10px; font-size:14px; color:gold; border-radius:10px; text-align:left; }
+        
+        /* ログイン画面 */
+        #login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000; }
+        input{ padding:15px; font-size:18px; border-radius:10px; border:none; margin-bottom:10px; width:200px; text-align:center; }
         
         #waiting-area { padding: 50px; }
         .timer-box { font-size: 30px; color: gold; border: 1px solid gold; padding: 10px; display: inline-block; margin-top: 10px; }
@@ -22,15 +27,22 @@
     </style>
 </head>
 <body>
+    <div id="login-overlay">
+        <h2>🐤 小鳥教へようこそ</h2>
+        <p>あなたの信者名を刻め</p>
+        <input type="text" id="user-name" placeholder="例：光の鳥" maxlength="10">
+        <button onclick="login()">教典に登録</button>
+    </div>
+
     <div id="notification" class="alert-flash">🚨 決戦開始！偽教祖を包囲せよ！！ 🚨</div>
 
-    <h1>🐤 小鳥教：聖戦</h1>
+    <h1 id="welcome-msg">🐤 聖戦待機中</h1>
 
     <div id="waiting-area">
-        <h2 id="wait-status">次なる神託を待機中...</h2>
+        <h2 id="wait-status">神託を待機中...</h2>
         <div id="countdown-area" style="display:none;">
-            <p style="color:red; font-weight:bold;">【偽教祖 降臨予告】</p>
-            <div id="target-time" style="font-size: 18px; color: gold; margin-bottom: 5px;"></div>
+            <p style="color:red; font-weight:bold;">【降臨予告】</p>
+            <div id="target-time" style="font-size: 18px; color: gold;"></div>
             <div class="timer-box">降臨まで: <span id="timer-text">--:--</span></div>
         </div>
     </div>
@@ -42,7 +54,7 @@
         <button onclick="attack()">聖なる突撃！！</button>
     </div>
 
-    <div id="log">教典を接続中...</div>
+    <div id="log"></div>
 
     <script>
         const firebaseConfig = {
@@ -58,33 +70,61 @@
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const auth = firebase.auth();
         const hpRef = database.ref('enemyHP');
         const eventRef = database.ref('eventData');
+        const logRef = database.ref('battleLog').limitToLast(10); // 最新10件のログ
 
+        let myName = "";
         let nextSpawnTime = 0;
         let isFighting = false;
 
-        // データの監視
-        eventRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data && data.spawnTime) {
-                nextSpawnTime = data.spawnTime;
-                const date = new Date(nextSpawnTime);
-                document.getElementById('target-time').innerText = `降臨予定：${date.getHours()}時${date.getMinutes()}分`;
-                document.getElementById('countdown-area').style.display = 'block';
-                document.getElementById('wait-status').innerText = "偽教祖、降臨の兆しあり。";
-            } else {
-                // 時間が決まっていない場合は、誰かが代表してランダムに決める
-                setRandomSpawn();
-            }
-        });
+        // 名前登録処理
+        function login() {
+            const nameInput = document.getElementById('user-name').value;
+            if (!nameInput) return alert("名前を入力せよ");
+            myName = nameInput;
+            
+            auth.signInAnonymously().then(() => {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('welcome-msg').innerText = `🐤 聖戦：信者 ${myName}`;
+                initGame();
+            });
+        }
 
-        // 1秒ごとにカウントダウン
+        function initGame() {
+            // イベント予告の監視
+            eventRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.spawnTime) {
+                    nextSpawnTime = data.spawnTime;
+                    const date = new Date(nextSpawnTime);
+                    document.getElementById('target-time').innerText = `降臨予定：${date.getHours()}時${date.getMinutes()}分`;
+                    document.getElementById('countdown-area').style.display = 'block';
+                    document.getElementById('wait-status').innerText = "偽教祖、降臨の兆しあり。";
+                } else {
+                    setRandomSpawn();
+                }
+            });
+
+            // ログの監視
+            logRef.on('child_added', (snapshot) => {
+                const data = snapshot.val();
+                addLog(`🔥 ${data.name} が ${data.dmg} ダメージ！`);
+            });
+
+            // HP監視
+            hpRef.on('value', (snapshot) => {
+                let hp = snapshot.val();
+                updateDisplay(hp || 0);
+                if (hp <= 0 && isFighting) finishBattle();
+            });
+        }
+
+        // 1秒ごとのカウントダウン
         setInterval(() => {
             if (nextSpawnTime === 0 || isFighting) return;
-            const now = Date.now();
-            const diff = nextSpawnTime - now;
-
+            const diff = nextSpawnTime - Date.now();
             if (diff <= 0) {
                 startBattle();
             } else {
@@ -94,18 +134,11 @@
             }
         }, 1000);
 
-        // --- 🧪 教祖の采配：ランダム出現時間をFirebaseにセット ---
         function setRandomSpawn() {
-            // 他の人が同時にセットしないよう、既にセットされていたら何もしない
-            eventRef.transaction((currentData) => {
-                if (currentData) return; // 既に誰かが決めた
-
-                // 【設定】1分後〜5分後の間でランダムに決める（ここを好きな時間に変えてね）
-                const waitMin = 1 * 60 * 1000;
-                const waitMax = 5 * 60 * 1000;
-                const randomWait = Math.floor(Math.random() * (waitMax - waitMin)) + waitMin;
-                
-                return { spawnTime: Date.now() + randomWait };
+            eventRef.transaction((current) => {
+                if (current) return;
+                const wait = Math.floor(Math.random() * (300000 - 60000)) + 60000; // 1〜5分
+                return { spawnTime: Date.now() + wait };
             });
         }
 
@@ -115,24 +148,16 @@
             document.getElementById('waiting-area').style.display = 'none';
             document.getElementById('battle-area').style.display = 'block';
             document.getElementById('notification').style.display = 'block';
-            hpRef.set(1000); 
-            log("🚨 降臨時刻！偽教祖が現れた！");
+            hpRef.set(1000);
+            database.ref('battleLog').remove(); // ログリセット
         }
-
-        hpRef.on('value', (snapshot) => {
-            let hp = snapshot.val();
-            updateDisplay(hp || 0);
-            if (hp <= 0 && isFighting) {
-                finishBattle();
-            }
-        });
 
         function attack() {
             if (!isFighting) return;
-            hpRef.transaction((currentHP) => {
-                let dmg = Math.floor(Math.random() * 20) + 10;
-                return (currentHP || 1000) - dmg;
-            });
+            let dmg = Math.floor(Math.random() * 20) + 10;
+            hpRef.transaction((curr) => (curr || 1000) - dmg);
+            // ログを送信
+            database.ref('battleLog').push({ name: myName, dmg: dmg });
         }
 
         function finishBattle() {
@@ -142,9 +167,6 @@
             document.getElementById('notification').style.display = 'none';
             document.getElementById('countdown-area').style.display = 'none';
             document.getElementById('wait-status').innerText = "偽教祖は浄化されました。";
-            log("🎊 討伐完了！平和が訪れた。");
-            
-            // 倒したらFirebaseの時間を空にする（すると自動で次の抽選が始まる）
             eventRef.set(null);
         }
 
@@ -153,7 +175,7 @@
             document.getElementById("eHPText").innerText = hp + " / 1000";
         }
 
-        function log(t) {
+        function addLog(t) {
             let l = document.getElementById("log");
             l.innerHTML = `<div>${t}</div>` + l.innerHTML;
         }
