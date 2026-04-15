@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,64 +7,101 @@
     <script src="http://192.168.1.30:3000/socket.io/socket.io.js"></script>
 
     <style>
-        body{ background:black; color:white; text-align:center; font-family:sans-serif; margin:0; }
-        #main { padding: 20px; }
-        .bar{ width:200px; height:20px; background:#333; margin:10px auto; border:1px solid gold; }
-        .hp{ height:100%; background:lime; transition: width 0.3s; }
-        button{ padding:15px; margin:5px; font-size:18px; border-radius:30px; background:gold; color:black; border:none; font-weight:bold; }
-        #log{ height:120px; overflow-y:auto; background:rgba(255,255,255,0.1); margin:10px; padding:10px; font-size:12px; color:gold; }
-        .bird-effect { position: fixed; font-size: 40px; animation: fly 1s forwards; pointer-events: none; }
-        @keyframes fly { from{ bottom: 0; opacity: 1; } to{ bottom: 100px; opacity: 0; } }
+        body { background: black; color: white; text-align: center; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; margin: 0; transition: background 0.5s; }
+        h1 { color: gold; text-shadow: 0 0 10px orange; margin-top: 20px; }
+        
+        /* バトルエリア */
+        #battle-area { margin-top: 50px; }
+        #eName { font-size: 2rem; margin-bottom: 10px; transition: 0.3s; }
+        
+        /* HPバーのデザイン */
+        .bar { width: 80%; max-width: 400px; height: 30px; background: #333; margin: 20px auto; border: 3px solid gold; border-radius: 20px; overflow: hidden; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+        .hp { height: 100%; background: linear-gradient(90deg, #ff4b2b, #ff416c); width: 100%; transition: width 0.3s ease-out; }
+        #eHPText { font-weight: bold; font-size: 1.2rem; margin-top: 5px; }
+
+        /* 聖なる突撃ボタン */
+        .attack-btn { padding: 20px 50px; font-size: 24px; border-radius: 50px; background: gold; color: black; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 8px #b8860b; outline: none; transition: 0.1s; }
+        .attack-btn:active { transform: translateY(4px); box-shadow: 0 4px #b8860b; }
+        .attack-btn:disabled { background: #555; box-shadow: none; color: #888; cursor: default; transform: none; }
+
+        /* ログエリア */
+        #log { height: 180px; overflow-y: auto; background: rgba(255, 215, 0, 0.05); margin: 30px 20px; padding: 15px; font-size: 14px; color: gold; border: 1px dashed gold; border-radius: 10px; text-align: left; }
+        .log-entry { border-bottom: 1px solid rgba(255, 215, 0, 0.2); padding: 5px 0; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
     </style>
 </head>
 <body>
+
     <h1>🐤 小鳥教：共闘聖戦</h1>
-    <div id="main">
-        <h2 id="enemy-name">敵：偽教祖</h2>
-        <div class="bar"><div id="eBar" class="hp" style="background:red;"></div></div>
-        <p id="eHPText"></p>
-        <button onclick="attack()">聖なる突撃！！</button>
+    
+    <div id="battle-area">
+        <div id="eName">👾 偽教祖</div>
+        <div class="bar"><div id="eBar" class="hp"></div></div>
+        <div id="eHPText">1000 / 1000</div>
+        <br>
+        <button id="attackBtn" class="attack-btn" onclick="attack()">聖なる突撃！！</button>
     </div>
-    <div id="log"></div>
+
+    <div id="log">聖戦の記録を待機中...</div>
 
     <script>
-    // GitHub側のコードのこの部分を書き換え
-const socket = io("http://192.168.1.30:3000", {
-    transports: ['websocket', 'polling'],
-    upgrade: false
-});
-
-        let enemy = { hp: 1000, maxHp: 1000 };
-
-        function updateHP() {
-            document.getElementById("eBar").style.width = (enemy.hp / enemy.maxHp) * 100 + "%";
-            document.getElementById("eHPText").innerText = enemy.hp + " / " + enemy.maxHp;
-        }
-
-        function attack() {
-            let dmg = Math.floor(Math.random() * 20) + 10;
-            // サーバーへ送信！
-            socket.emit('send-attack', { sender: "信者", damage: dmg });
-        }
-
-        // 全員の攻撃を受信！
-        socket.on('receive-attack', (data) => {
-            enemy.hp -= data.damage;
-            if(enemy.hp < 0) enemy.hp = 0;
-            updateHP();
-            
-            let l = document.getElementById("log");
-            l.innerHTML = `<div>🔥 ${data.sender}が${data.damage}のダメージ！</div>` + l.innerHTML;
-
-            // 画面に小鳥を飛ばす
-            let b = document.createElement("div");
-            b.className = "bird-effect"; b.innerText = "🐤";
-            b.style.left = Math.random() * 80 + 10 + "%";
-            document.body.appendChild(b);
-            setTimeout(() => b.remove(), 1000);
+        // VALUESTARのIPを指定。GitHubから入る場合はスマホ設定で「安全でないコンテンツ」を許可してください
+        const socket = io("http://192.168.1.30:3000", {
+            transports: ['websocket', 'polling']
         });
 
-        updateHP();
+        let currentHP = 1000;
+        const maxHP = 1000;
+
+        // サーバーから初期HPを受け取る
+        socket.on('init-hp', (hp) => {
+            currentHP = hp;
+            updateDisplay(hp);
+        });
+
+        // 攻撃実行
+        function attack() {
+            if (currentHP <= 0) return;
+            const damage = Math.floor(Math.random() * 25) + 15; // 威力アップ！
+            socket.emit('send-attack', { sender: "熱心な信者", damage: damage });
+        }
+
+        // 全員の攻撃結果を受信
+        socket.on('receive-attack', (data) => {
+            currentHP = data.hp;
+            updateDisplay(data.hp);
+            addLog(`🔥 【${data.sender}】の突撃！ ${data.damage} ダメージを与えた！`);
+        });
+
+        // 画面表示を更新する関数
+        function updateDisplay(hp) {
+            const barWidth = Math.max(0, (hp / maxHP) * 100);
+            document.getElementById("eBar").style.width = barWidth + "%";
+            document.getElementById("eHPText").innerText = Math.max(0, hp) + " / " + maxHP;
+
+            // HPが0になった時のトドメ処理
+            if (hp <= 0) {
+                document.getElementById("eName").innerText = "🎊 偽教祖 討伐完了！ 🎊";
+                document.getElementById("eName").style.color = "gold";
+                document.getElementById("eName").style.fontSize = "3rem";
+                
+                const btn = document.getElementById("attackBtn");
+                btn.innerText = "✨ 平和が訪れた ✨";
+                btn.disabled = true; // ボタンを押せなくする
+                
+                document.body.style.background = "#222"; // 画面を少し変える
+                addLog("🏆 聖戦に勝利しました！偽教祖は光の中に消えていきました。");
+            }
+        }
+
+        // ログを追加する関数
+        function addLog(message) {
+            const logDiv = document.getElementById("log");
+            const entry = document.createElement("div");
+            entry.className = "log-entry";
+            entry.innerText = message;
+            logDiv.insertBefore(entry, logDiv.firstChild); // 最新を上に
+        }
     </script>
 </body>
 </html>
