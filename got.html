@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐤 小鳥教：聖なる宝物庫</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+
+    <style>
+        body { background: black; color: white; text-align: center; font-family: sans-serif; margin: 0; }
+        h1 { color: gold; border-bottom: 2px solid gold; padding: 20px; margin: 0; }
+        .item-list { padding: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .item-card { 
+            background: #111; border: 1px solid gold; border-radius: 10px; 
+            padding: 15px; width: 140px; box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .ssr { border: 2px solid cyan; box-shadow: 0 0 15px cyan; color: cyan; font-weight: bold; }
+        .back-btn { 
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            padding: 15px 30px; background: gold; color: black; border: none; 
+            border-radius: 50px; font-weight: bold; cursor: pointer; text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📜 聖なる宝物庫</h1>
+    <div id="status">教典を読み込み中...</div>
+    <div class="item-list" id="item-list"></div>
+
+    <a href="index.html" class="back-btn">聖戦へ戻る</a>
+
+    <script>
+        // index.htmlと同じ設定を貼り付けてください
+        const firebaseConfig = {
+            apiKey: "AIzaSyCJX2ggw5ZlDzdkK8YjsuEneVi9etA3mQ4",
+            authDomain: "bird-battle-online.firebaseapp.com",
+            databaseURL: "https://bird-battle-online-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "bird-battle-online",
+            storageBucket: "bird-battle-online.firebasestorage.app",
+            messagingSenderId: "801450921560",
+            appId: "1:801450921560:web:a6b3b4993945f97f73c42d"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // ログイン状態を確認してデータを取得
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('status').innerText = "あなたの功績を照らし合わせ中...";
+                const itemsRef = database.ref('users/' + user.uid + '/items');
+                
+                itemsRef.on('value', snap => {
+                    const listDiv = document.getElementById('item-list');
+                    listDiv.innerHTML = ""; // 一旦クリア
+                    const data = snap.val();
+                    
+                    if (!data) {
+                        document.getElementById('status').innerText = "まだ宝物はありません。聖戦に励みましょう。";
+                        return;
+                    }
+                    
+                    document.getElementById('status').innerText = "あなたが手にした聖遺物です：";
+                    
+                    Object.values(data).reverse().forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'item-card';
+                        if (item.name.includes("SSR")) card.classList.add('ssr');
+                        card.innerText = item.name;
+                        listDiv.appendChild(card);
+                    });
+                });
+            } else {
+                document.getElementById('status').innerText = "名もなき者に宝は見せられぬ（ログインが必要です）";
+            }
+        });
+    </script>
+</body>
+</html>
