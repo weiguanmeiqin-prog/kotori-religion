@@ -96,7 +96,7 @@
         };
 
         let myName = "", myHP = 100, myCoins = 0, isFighting = false, nextSpawnTime = 0, enemyHP = 1000, atkBonus = 0;
-        let enemyTimer = null; // 亡霊攻撃阻止用タイマー
+        let enemyTimer = null;
 
         function login() {
             const name = document.getElementById('user-name').value;
@@ -114,7 +114,6 @@
                 myCoins = data.coins || 0;
                 document.getElementById('my-coins').innerText = myCoins;
                 
-                // --- 重複＆バフ計算ロジック ---
                 let totalBonus = 0;
                 let counts = {};
                 if (data.items) {
@@ -125,8 +124,7 @@
                         else if (item.name.includes("SR")) totalBonus += isFirst ? 5 : 3;
                         else if (item.name.includes("R")) totalBonus += isFirst ? 2 : 1;
                     });
-                    const names = Object.keys(counts);
-                    if (names.some(n=>n.includes("黄金の教祖像")) && names.some(n=>n.includes("古の教典原書"))) totalBonus += 50;
+                    if (counts["SSR：黄金の教祖像"] && counts["SSR：古の教典原書"]) totalBonus += 50;
                 }
                 atkBonus = totalBonus;
                 document.getElementById('buff-info').innerText = `ATK BONUS: +${atkBonus}%`;
@@ -166,12 +164,8 @@
             else if (rand < 60) res = "R：" + ITEMS.R[Math.floor(Math.random()*ITEMS.R.length)];
             else res = "N：" + ITEMS.N[Math.floor(Math.random()*ITEMS.N.length)];
             
-            document.getElementById('gacha-result').innerText = "奇跡を召喚中...";
-            setTimeout(() => {
-                document.getElementById('gacha-result').innerText = `✨ ${res} ✨`;
-                database.ref('users/' + auth.currentUser.uid + '/items').push({ name: res, date: Date.now() });
-                addLog(`🎁 ${myName}が「${res}」を限界突破！`);
-            }, 800);
+            database.ref('users/' + auth.currentUser.uid + '/items').push({ name: res, date: Date.now() });
+            document.getElementById('gacha-result').innerText = `✨ ${res} ✨`;
         }
 
         function playerAction(type) {
@@ -185,7 +179,6 @@
             } else {
                 myHP = Math.min(100, myHP + 30);
                 document.getElementById('my-hp').innerText = myHP;
-                database.ref('battleLog').push({type:"HEAL", msg:`${myName}の祈り！HP回復！`});
             }
         }
 
@@ -194,7 +187,7 @@
             if (!isFighting || enemyHP <= 0) return;
             enemyTimer = setTimeout(() => {
                 if (!isFighting || enemyHP <= 0) return;
-                database.ref('battleLog').push({type:"ENEMY", dmg:10, msg:"偽教祖の反撃！全員10ダメ！"});
+                database.ref('battleLog').push({type:"ENEMY", dmg:10, msg:"偽教祖の反撃！"});
                 enemyAI();
             }, 5000);
         }
@@ -202,9 +195,8 @@
         function win() {
             if(!isFighting) return;
             isFighting = false;
-            if (enemyTimer) clearTimeout(enemyTimer); // 除霊！
+            if (enemyTimer) clearTimeout(enemyTimer); 
             database.ref('users/' + auth.currentUser.uid + '/coins').transaction(c => (c || 0) + 150);
-            document.getElementById('reward-text').innerText = `聖戦勝利！\n150コイン獲得＆亡霊を浄化完了！`;
             document.getElementById('victory-overlay').classList.remove('hidden');
         }
 
@@ -218,10 +210,8 @@
         setInterval(() => {
             if (nextSpawnTime === 0 || isFighting) return;
             const diff = nextSpawnTime - Date.now();
-            if (diff <= 0) {
-                document.getElementById('countdown-area').style.display = 'none';
-                startBattle();
-            } else document.getElementById('timer-text').innerText = Math.floor(diff/1000) + "s";
+            if (diff <= 0) startBattle();
+            else document.getElementById('timer-text').innerText = Math.floor(diff/1000) + "s";
         }, 1000);
 
         function startBattle() {
