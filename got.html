@@ -14,20 +14,18 @@
         .item-card { 
             background: #111; border: 1px solid #444; border-radius: 10px; 
             padding: 15px; width: 140px; color: #ccc; font-size: 13px; position: relative;
-            transition: transform 0.2s;
         }
-        .item-card:hover { transform: scale(1.1); z-index: 10; }
         .ssr { border: 2px solid cyan; box-shadow: 0 0 15px cyan; color: white; font-weight: bold; animation: shine 2s infinite linear; }
         .sr { border: 2px solid #c0c0c0; color: #fff; }
         .r { border: 1px solid #cd7f32; color: #ffa500; }
         .bonus-tag { font-size: 10px; color: lime; display: block; margin-top: 5px; }
         @keyframes shine { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
-        .back-btn { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; background: gold; color: black; border-radius: 50px; font-weight: bold; text-decoration: none; box-shadow: 0 4px 15px rgba(255,215,0,0.5); }
+        .back-btn { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; background: gold; color: black; border-radius: 50px; font-weight: bold; text-decoration: none; }
     </style>
 </head>
 <body>
     <h1>📜 聖なる宝物庫</h1>
-    <div id="status" style="margin-top:20px;">読み込み中...</div>
+    <div id="status" style="margin-top:20px;">あなたの功績を確認中...</div>
     <div id="set-bonus" style="color:cyan; font-weight:bold; margin:10px;"></div>
     <div class="item-list" id="item-list"></div>
     <a href="index.html" class="back-btn">聖戦へ戻る</a>
@@ -46,47 +44,33 @@
         const database = firebase.database();
         const auth = firebase.auth();
 
-        // 【ここが重要！】宝物庫ページでは「戦闘中フラグ」を強制的にオフにする
-        // これにより、もし別タブや背景で攻撃AIが動こうとしても阻止されます
-        let isFighting = false; 
-
         auth.onAuthStateChanged(user => {
             if (user) {
                 database.ref('users/' + user.uid + '/items').on('value', snap => {
                     const listDiv = document.getElementById('item-list');
                     listDiv.innerHTML = "";
                     const data = snap.val();
-                    if (!data) { document.getElementById('status').innerText = "宝物なし"; return; }
+                    if (!data) { document.getElementById('status').innerText = "まだ宝物はありません"; return; }
                     
-                    document.getElementById('status').innerText = "所持アイテム一覧";
-                    let names = [];
-                    Object.values(data).reverse().forEach(item => {
-                        names.push(item.name);
+                    document.getElementById('status').innerText = "所持アイテム一覧（重複は力なり）";
+                    let counts = {};
+                    Object.values(data).forEach(item => { counts[item.name] = (counts[item.name] || 0) + 1; });
+
+                    Object.keys(counts).forEach(name => {
                         const card = document.createElement('div');
-                        card.className = 'item-card';
-                        let b = "ATK +0%";
-                        if (item.name.includes("SSR")) { card.classList.add('ssr'); b = "ATK +15%"; }
-                        else if (item.name.includes("SR")) { card.classList.add('sr'); b = "ATK +5%"; }
-                        else if (item.name.includes("R")) { card.classList.add('r'); b = "ATK +2%"; }
-                        card.innerHTML = `${item.name}<span class="bonus-tag">${b}</span>`;
+                        let rarity = name.includes("SSR") ? "ssr" : (name.includes("SR") ? "sr" : (name.includes("R") ? "r" : "n"));
+                        card.className = `item-card ${rarity}`;
+                        let num = counts[name] > 1 ? `<span style="color:gold;"> x${counts[name]}</span>` : "";
+                        card.innerHTML = `${name}${num}<span class="bonus-tag">限界突破中</span>`;
                         listDiv.appendChild(card);
                     });
 
-                    // セットボーナス表示
-                    if (names.some(n=>n.includes("黄金の教祖像")) && names.some(n=>n.includes("古の教典原書"))) {
+                    if (counts["SSR：黄金の教祖像"] && counts["SSR：古の教典原書"]) {
                         document.getElementById('set-bonus').innerText = "✨ 【セット発動】伝説の師弟：ATK +50% ✨";
                     }
                 });
-            } else {
-                document.getElementById('status').innerText = "ログインが必要です";
             }
         });
-
-        // 念のため、このページを開いた瞬間に敵のHP監視などを止める処理
-        // (index.html側のスクリプトが誤作動しないようにするおまじない)
-        window.onload = function() {
-            console.log("宝物庫へようこそ。ここでは聖戦のダメージは届きません。");
-        };
     </script>
 </body>
 </html>
