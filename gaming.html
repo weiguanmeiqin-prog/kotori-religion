@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐤 小鳥教外伝：千羽鶴の祈り -Fragment of Japan-</title>
+    <style>
+        :root { --main-gold: #b8860b; --bg-dark: #050505; --accent-blue: #00ced1; }
+        body{ background: var(--bg-dark); color: #ccc; text-align: center; font-family: "MS PMincho", serif; margin: 0; }
+        #game-container { max-width: 600px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; border-left: 1px solid #222; border-right: 1px solid #222; }
+        
+        /* ステータスバー */
+        #status-panel { background: #111; padding: 15px; border-bottom: 2px solid var(--main-gold); display: flex; justify-content: space-around; font-size: 14px; position: sticky; top: 0; z-index: 100; }
+        .stat-val { color: gold; font-weight: bold; text-shadow: 0 0 5px gold; }
+        #flag-info { font-size: 10px; color: var(--accent-blue); margin-top: 5px; }
+
+        /* 物語表示部 */
+        #display-area { flex-grow: 1; padding: 30px 20px; background: linear-gradient(to bottom, #111, #050505); }
+        #area-title { color: var(--main-gold); font-size: 22px; margin-bottom: 15px; letter-spacing: 0.2em; }
+        #main-text { line-height: 2; text-align: left; min-height: 180px; font-size: 17px; }
+
+        /* 操作パネル */
+        #action-panel { background: #000; padding: 20px; border-top: 1px solid #333; }
+        .action-btn { display: block; width: 100%; padding: 15px; margin: 10px 0; background: #0a0a0a; color: #fff; border: 1px solid #444; border-radius: 4px; cursor: pointer; transition: 0.3s; }
+        .action-btn:hover { border-color: var(--accent-blue); background: #111; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="status-panel">
+        <div>📄 折り紙: <span id="stat-origami" class="stat-val">0</span> / 1000</div>
+        <div>⚖️ 業: <span id="stat-karma" class="stat-val">0</span></div>
+        <div id="flag-info"></div>
+    </div>
+
+    <div id="display-area">
+        <div id="area-title">---</div>
+        <div id="main-text">...</div>
+    </div>
+
+    <div id="action-panel"></div>
+</div>
+
+<script>
+    // プレイヤー変数
+    let player = {
+        origami: 0,
+        karma: 0,
+        location: "shibuya_ruins",
+        flags: {
+            met_maid: false,
+            met_maiko: false,
+            knows_truth: false
+        }
+    };
+
+    // --- 物語データ (エリアをここで量産！) ---
+    const STORY_DATA = {
+        // --- ステージ1: 渋谷 ---
+        "shibuya_ruins": {
+            title: "沈黙のスクランブル交差点",
+            text: "かつて数百万人が行き交った場所。今は巨大な液晶広告が「空の定額制プラン」を虚しく映し出している。足元に、千切れた紙が落ちている……。",
+            actions: [
+                { label: "紙を丁寧に拾う (+1枚)", next: "shibuya_ruins", effect: () => player.origami += 1 },
+                { label: "秋葉原の方角へ進む", next: "akihabara_submerged" }
+            ]
+        },
+        // --- ステージ2: 秋葉原 (沈んだ秋葉原) ---
+        "akihabara_submerged": {
+            title: "沈んだ秋葉原",
+            text: "街の半分がオイルの海に沈んでいる。錆びついたメイドロボが一人、動かない家電を売り続けているようだ。",
+            actions: [
+                { label: "メイドロボに話しかける", next: "akiba_maid_talk" },
+                { label: "電子の海から紙を浚う (+3枚)", next: "akihabara_submerged", effect: () => player.origami += 3 }
+            ]
+        },
+        "akiba_maid_talk": {
+            title: "錆びた奉仕心",
+            text: "メイドロボ「オカエリナサイ……ゴ主人様。コノ世界ノ……『空』ハ、綺麗デスカ？」\n彼女の回路は、もう本物の空を覚えていない。",
+            actions: [
+                { label: "「綺麗だよ」と嘘をつく", next: "akihabara_submerged", effect: () => { player.flags.met_maid = true; player.karma -= 2; } },
+                { label: "無言で立ち去る", next: "akihabara_submerged" }
+            ]
+        },
+        // --- ステージ3: 京都 (電子化された京都) ---
+        "kyoto_cyber": {
+            title: "電子化された京都",
+            text: "歴史はデータへと変換され、金閣寺はホログラムで再構築されている。本物の竹林はとうの昔に伐採され、光ファイバーの森に変わっていた。",
+            actions: [
+                { label: "ホログラムの舞妓に近づく", next: "kyoto_maiko" },
+                { label: "電子の竹林で紙を探す (+2枚)", next: "kyoto_cyber", effect: () => player.origami += 2 },
+                { label: "さらに西、富士山の方角へ", next: "fuji_forgotten" }
+            ]
+        },
+        "kyoto_maiko": {
+            title: "光る舞妓の問い",
+            text: "舞妓「紙を折って、何をお望みどすか？ データの空に、鳥は飛びまへんえ。」",
+            actions: [
+                { label: "「本物の小鳥を呼ぶんだ」", next: "kyoto_cyber", condition: () => player.flags.met_maid, 
+                  effect: () => { player.flags.met_maiko = true; player.origami += 10; },
+                  label_alt: "「本物の小鳥を……」(秋葉原での出会いが必要)" }
+            ]
+        },
+        // --- ステージ4: 富士山 (空を忘れた富士山) ---
+        "fuji_forgotten": {
+            title: "空を忘れた富士山",
+            text: "かつての霊峰。今は巨大なサーバーセンターが山肌を覆い、熱を逃がすためのファンが唸りを上げている。ここが「偽りの空」の演算機だ。",
+            actions: [
+                { label: "演算機の隙間から紙を回収 (+5枚)", next: "fuji_forgotten", effect: () => player.origami += 5 },
+                { label: "頂上の管理パネルに触れる", next: "fuji_summit", condition: () => player.origami >= 900 }
+            ]
+        },
+        "fuji_summit": {
+            title: "富士山頂・心臓部",
+            text: "折り紙は間もなく1000枚。あなたの背後に、偽教祖の影が差した。\n「その紙を渡せ。偽りの空こそが、民を救う唯一の安らぎだ」",
+            actions: [
+                { label: "拒絶する (最終決戦へ)", next: "final_battle" },
+                { label: "紙を差し出す (支配エンドへ)", next: "ending_submission" }
+            ]
+        }
+    };
+
+    // --- エンジン部分 ---
+
+    function updateUI() {
+        document.getElementById('stat-origami').innerText = player.origami;
+        document.getElementById('stat-karma').innerText = player.karma;
+        
+        // フラグ状況を小さく表示
+        let flagText = "";
+        if(player.flags.met_maid) flagText += " [メイドの記憶] ";
+        if(player.flags.met_maiko) flagText += " [舞妓の約束] ";
+        document.getElementById('flag-info').innerText = flagText;
+
+        const area = STORY_DATA[player.location];
+        document.getElementById('area-title').innerText = area.title;
+        document.getElementById('main-text').innerText = area.text;
+
+        const panel = document.getElementById('action-panel');
+        panel.innerHTML = "";
+
+        area.actions.forEach(act => {
+            const btn = document.createElement('button');
+            btn.className = "action-btn";
+            
+            // 条件付きボタンの判定
+            if (act.condition && !act.condition()) {
+                btn.innerText = act.label_alt || "？？？";
+                btn.disabled = true;
+                btn.style.opacity = "0.4";
+            } else {
+                btn.innerText = act.label;
+                btn.onclick = () => {
+                    if(act.effect) act.effect();
+                    player.location = act.next;
+                    updateUI();
+                };
+            }
+            panel.appendChild(btn);
+        });
+    }
+
+    // 初回起動
+    window.onload = updateUI;
+</script>
+</body>
+</html>
