@@ -14,37 +14,48 @@ const MONOLOGUES = {
     20: "「20枚。……誰かが後ろを歩いている気がした。でも、振り返れば空虚な街だけ。」",
     100: "「100枚。……千羽鶴への最初の1ページが書き終わった。CHAPTER 1 END.」"
 };
-
 function renderMap() {
     const map = MAPS[state.currentMap];
     const screen = document.getElementById('game-screen');
     document.getElementById('map-name').textContent = map.name;
     document.getElementById('count-display').textContent = `ORIGAMI: ${state.origamiCount}/100`;
-    screen.innerHTML = '';
+    
+    screen.innerHTML = ''; // 一旦クリア
 
-    map.layout.forEach((row, y) => {
-        row.forEach((cell, x) => {
-            const div = document.createElement('div');
-            if (cell === 1) div.className = 'wall';
-            div.id = `cell-${x}-${y}`;
-            screen.appendChild(div);
-        });
-    });
-
+    // 1. イベントオブジェクト（ゴミ箱や折り紙）を座標に直接配置
     map.events.forEach(ev => {
-        const cell = document.getElementById(`cell-${ev.x}-${ev.y}`);
-        if (cell && !state.history.includes(ev.id)) {
-            cell.textContent = ev.char;
+        if (!state.history.includes(ev.id)) {
+            const div = document.createElement('div');
+            div.className = 'cell';
+            div.style.left = (ev.x * 32) + 'px';
+            div.style.top = (ev.y * 32) + 'px';
+            div.textContent = ev.char;
+            screen.appendChild(div);
         }
     });
 
+    // 2. プレイヤーを配置
     const p = document.createElement('div');
     p.id = 'player';
     p.textContent = '🐥';
     p.style.position = 'absolute';
+    p.style.width = '32px';
+    p.style.height = '32px';
     p.style.left = (state.x * 32) + 'px';
     p.style.top = (state.y * 32) + 'px';
     screen.appendChild(p);
+
+    // 3. 影のグリッチ演出（稀に後ろに誰かいる）
+    if (Math.random() < 0.10) {
+        const shadow = document.createElement('div');
+        shadow.className = 'cell';
+        shadow.textContent = '👤';
+        shadow.style.left = (state.x * 32) + 'px';
+        shadow.style.top = ((state.y + 1) * 32) + 'px'; // 一歩後ろ
+        shadow.style.opacity = "0.3";
+        screen.appendChild(shadow);
+        setTimeout(() => shadow.remove(), 200);
+    }
 }
 
 function typeWriter(text) {
