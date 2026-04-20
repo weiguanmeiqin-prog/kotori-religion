@@ -1,57 +1,33 @@
-body {
-    background-color: #1a1a1a;
-    color: white;
-    font-family: 'Courier New', Courier, monospace;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 0;
-    overflow: hidden;
-}
-
-#game-container {
-    position: relative;
-    width: 416px; /* 13マス * 32px */
-    margin-top: 20px;
-}
-
 #game-screen {
     position: relative;
-    width: 416px;
+    width: 416px; /* 13マス * 32px */
     height: 384px; /* 12マス * 32px */
-    background-color: #222;
-    background-image: radial-gradient(#333 1px, transparent 1px);
+    background-color: #1a1a1a;
+    /* ドットの背景で広がりを演出 */
+    background-image: 
+        radial-gradient(circle, #333 1px, transparent 1px);
     background-size: 32px 32px;
-    border: 2px solid #444;
-    transition: background-color 0.1s; /* 幻影演出用 */
+    border: 2px solid #333;
+    margin: 0 auto;
+    overflow: hidden; /* 枠外は見せない */
+    image-rendering: pixelated; /* ドット絵感を出す */
 }
 
-.wall { display: none; } /* 壁は存在しない世界 */
+/* マップチップ（セル）を絶対配置に変更して、左寄りを防止 */
+.cell {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
 #player {
     font-size: 24px;
-    z-index: 10;
+    z-index: 100;
     transition: all 0.1s linear;
-}
-
-#dialogue-box {
-    width: 416px;
-    height: 120px;
-    background: rgba(0,0,0,0.8);
-    border: 1px solid #555;
-    margin-top: 10px;
-    padding: 10px;
-    box-sizing: border-box;
-    font-size: 14px;
-    line-height: 1.6;
-    overflow-y: auto;
-}
-
-#ui-layer {
-    width: 416px;
     display: flex;
-    justify-content: space-between;
-    padding: 5px;
-    color: #888;
-    font-size: 12px;
+    justify-content: center;
+    align-items: center;
 }
