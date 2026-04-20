@@ -31,7 +31,6 @@ function renderMap() {
     map.events.forEach(ev => {
         const cell = document.getElementById(`cell-${ev.x}-${ev.y}`);
         if (cell) {
-            // 折り紙タイプで取得済みの場合のみ非表示。それ以外（看板など）は残す
             const isPicked = (ev.type === 'origami' || ev.type === 'origami_bonus') && state.history.includes(ev.id);
             if (!isPicked) {
                 cell.textContent = ev.char;
@@ -45,8 +44,6 @@ function renderMap() {
     p.style.position = 'absolute';
     p.style.left = (state.x * 32) + 'px';
     p.style.top = (state.y * 32) + 'px';
-    p.style.width = '32px';
-    p.style.height = '32px';
     screen.appendChild(p);
 }
 
@@ -80,30 +77,37 @@ function handleInput(e) {
     if (e.key === "ArrowLeft") nextX--;
     if (e.key === "ArrowRight") nextX++;
 
-    // エリア移動判定
-    if (nextX >= 13 && map.exits.right) {
+    // --- エリア移動判定の強化 ---
+    // マップの最大幅(13列)と最大高(マップごとの行数)を取得
+    const mapWidth = map.layout[0].length;
+    const mapHeight = map.layout.length;
+
+    if (nextX >= mapWidth && map.exits.right) {
         const ex = map.exits.right; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
     } else if (nextX < 0 && map.exits.left) {
         const ex = map.exits.left; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
-    } else if (nextY >= 12 && map.exits.down) {
+    } else if (nextY >= mapHeight && map.exits.down) {
         const ex = map.exits.down; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
     } else if (nextY < 0 && map.exits.up) {
         const ex = map.exits.up; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
-    } else if (map.layout[nextY] && map.layout[nextY][nextX] === 0) {
-        state.x = nextX; state.y = nextY;
-        const ev = map.events.find(e => e.x === state.x && e.y === state.y);
-        if (ev && !state.history.includes(ev.id)) {
-            if (ev.type === 'origami') state.origamiCount += 1;
-            else if (ev.type === 'origami_bonus') {
-                if (ev.id === 'bonus1') state.origamiCount += 3;
-                if (ev.id === 'bonus2') state.origamiCount += 5;
+    } else {
+        // 通常の移動判定
+        if (map.layout[nextY] && map.layout[nextY][nextX] === 0) {
+            state.x = nextX; state.y = nextY;
+            const ev = map.events.find(e => e.x === state.x && e.y === state.y);
+            if (ev && !state.history.includes(ev.id)) {
+                if (ev.type === 'origami') state.origamiCount += 1;
+                else if (ev.type === 'origami_bonus') {
+                    if (ev.id === 'bonus1') state.origamiCount += 3;
+                    if (ev.id === 'bonus2') state.origamiCount += 5;
+                }
+                
+                if (ev.type === 'origami' || ev.type === 'origami_bonus') state.history.push(ev.id);
+                
+                let finalMsg = ev.msg + ` (${state.origamiCount}/100)`;
+                if (MONOLOGUES[state.origamiCount]) finalMsg += "\n\n" + MONOLOGUES[state.origamiCount];
+                typeWriter(finalMsg);
             }
-            
-            if (ev.type === 'origami' || ev.type === 'origami_bonus') state.history.push(ev.id);
-            
-            let finalMsg = ev.msg + ` (${state.origamiCount}/100)`;
-            if (MONOLOGUES[state.origamiCount]) finalMsg += "\n\n" + MONOLOGUES[state.origamiCount];
-            typeWriter(finalMsg);
         }
     }
     renderMap();
