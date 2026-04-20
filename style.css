@@ -1,55 +1,57 @@
 body {
-    background-color: #050505;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    background-color: #1a1a1a;
     color: white;
-    font-family: 'Courier New', Courier, sans-serif;
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
     overflow: hidden;
 }
 
 #game-container {
-    width: 416px;
-    background: #000;
-    border: 4px solid #fff;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    position: relative;
+    width: 416px; /* 13マス * 32px */
+    margin-top: 20px;
 }
 
 #game-screen {
-    width: 416px;
-    height: 416px;
     position: relative;
-    display: grid;
-    grid-template-columns: repeat(13, 32px);
-    grid-template-rows: repeat(13, 32px);
-    background-image: radial-gradient(#111 1px, transparent 1px);
-    background-size: 16px 16px;
+    width: 416px;
+    height: 384px; /* 12マス * 32px */
+    background-color: #222;
+    background-image: radial-gradient(#333 1px, transparent 1px);
+    background-size: 32px 32px;
+    border: 2px solid #444;
+    transition: background-color 0.1s; /* 幻影演出用 */
 }
 
-.wall {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    box-shadow: inset 2px 2px 0 #222;
-}
+.wall { display: none; } /* 壁は存在しない世界 */
 
 #player {
     font-size: 24px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    filter: drop-shadow(0 0 8px gold);
-    z-index: 100;
-    pointer-events: none;
+    z-index: 10;
+    transition: all 0.1s linear;
 }
 
 #dialogue-box {
-    height: 100px;
-    border-top: 4px solid #fff;
-    padding: 12px;
-    background: #000;
+    width: 416px;
+    height: 120px;
+    background: rgba(0,0,0,0.8);
+    border: 1px solid #555;
+    margin-top: 10px;
+    padding: 10px;
+    box-sizing: border-box;
     font-size: 14px;
     line-height: 1.6;
     overflow-y: auto;
+}
+
+#ui-layer {
+    width: 416px;
+    display: flex;
+    justify-content: space-between;
+    padding: 5px;
+    color: #888;
+    font-size: 12px;
 }
