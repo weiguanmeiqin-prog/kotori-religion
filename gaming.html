@@ -1,170 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>🐤 小鳥教外伝：千羽鶴の祈り -Final Chapter-</title>
-    <style>
-        :root { --main-gold: #b8860b; --bg-dark: #050505; --accent-blue: #00ced1; }
-        body { background: var(--bg-dark); color: #ccc; text-align: center; font-family: "MS PMincho", serif; margin: 0; overflow: hidden; }
-        #game-container { position: relative; width: 400px; margin: 10px auto; }
-        #game-screen { position: relative; width: 400px; height: 400px; background: #111; border: 4px solid #444; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,1); }
-        .entity { position: absolute; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-        #player { z-index: 100; transition: 0.1s; background: rgba(0,206,209,0.2); border-radius: 50%; }
-        #msg-box { position: absolute; bottom: 10px; left: 10px; right: 10px; min-height: 80px; background: rgba(0,0,0,0.95); border: 2px solid #fff; padding: 12px; display: none; z-index: 200; font-size: 14px; text-align: left; box-sizing: border-box; }
-        #hud { display: flex; justify-content: space-between; color: gold; padding: 5px; font-size: 14px; background: #222; }
-        #controls { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; justify-content: center; margin-top: 10px; }
-        .btn { width: 70px; height: 50px; background: #333; color: white; border: none; border-radius: 8px; font-size: 20px; cursor: pointer; }
-        #btn-a { background: var(--main-gold); height: 110px; grid-row: 1 / 3; grid-column: 3; }
-        .choice-container { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
-        .choice-btn { background: #444; color: white; border: 1px solid gold; padding: 5px; cursor: pointer; font-size: 12px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOTORI - CHAPTER 1: SHIBUYA</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<div id="game-container">
-    <div id="hud">
-        <span>📄 <span id="count">0</span>/1000</span>
-        <span>⚖️ Karma: <span id="karma">0</span></span>
-    </div>
-    <div id="game-screen">
-        <div id="area-label" style="position:absolute; top:5px; width:100%; text-align:center; color:#555; z-index:50;"></div>
-        <div id="player" class="entity">🐤</div>
-        <div id="objects-layer"></div>
-        <div id="msg-box">
-            <div id="msg-text"></div>
-            <div id="choices" class="choice-container"></div>
+    <div id="game-container">
+        <div id="game-screen"></div>
+        <div id="dialogue-box">
+            <p id="dialogue-text">（矢印キーで移動… 聖地 渋谷：第一層）</p>
         </div>
     </div>
-    <div id="controls">
-        <button class="btn" style="grid-column:2" onclick="move(0,-32)">↑</button>
-        <button class="btn" style="grid-column:1" onclick="move(-32,0)">←</button>
-        <button class="btn" style="grid-column:2" onclick="move(0,32)">↓</button>
-        <button class="btn" style="grid-column:3" onclick="move(32,0)">→</button>
-        <button id="btn-a" class="btn" onclick="interact()">A</button>
-    </div>
-</div>
-
-<script>
-    let state = {
-        origami: 0, karma: 0, currentMap: "shibuya", pos: { x: 192, y: 192 },
-        isTalking: false, isCleared: false, endType: null, flags: {}
-    };
-
-    const MAPS = {
-        "shibuya": { name: "沈黙の渋谷", exits: { right: "akiba", down: "ebisu" }, objects: [
-            { x: 96, y: 128, type: 'npc', char: '👤', id: 'hachiko', getMsg: () => state.isCleared ? "老人「空を見てください。あなたが救ったんです。」" : "老人「紙など集めて何になる。腹は膨れんぞ。」", 
-              choices: [{ t: "優しく微笑む", k: -5 }, { t: "冷たく無視する", k: 5 }] }
-        ]},
-        "akiba": { name: "油の海・秋葉原", exits: { left: "shibuya", right: "ueno", up: "tsukuba" }, objects: [
-            { x: 192, y: 192, type: 'npc', char: '🤖', id: 'maid', getMsg: () => state.isCleared ? "メイド「エラー…涙が出るのは故障でしょうか」" : "メイド「ご主人様、本物の青空をロードしてくれますか？」",
-              choices: [{ t: "「約束するよ」", k: -5, f: "maid_promise" }, { t: "「ただのデータだ」", k: 5 }] },
-            { x: 32, y: 32, type: 'item', char: '📄', id: 'p1' }
-        ]},
-        "ebisu": { name: "廃ビルの森・恵比寿", exits: { up: "shibuya", right: "roppongi" }, objects: [
-            { x: 288, y: 160, type: 'item', char: '📄', id: 'p2' }
-        ]},
-        "roppongi": { name: "光らぬ塔・六本木", exits: { left: "ebisu", up: "akiba" }, objects: [
-            { x: 160, y: 32, type: 'npc', char: '👔', id: 'ceo', getMsg: () => "男「かつての富など、この暗闇では無価値だ…」" }
-        ]},
-        "ueno": { name: "凍りついた森・上野", exits: { left: "akiba", up: "nikko" }, objects: [
-            { x: 64, y: 256, type: 'npc', char: '🐼', id: 'panda', getMsg: () => "（かつてのパンダの像だ。紙が挟まっている…）", effect: () => state.origami += 50 }
-        ]},
-        "nikko": { name: "黄金なき日光", exits: { down: "ueno", up: "sendai" }, objects: [
-            { x: 192, y: 128, type: 'npc', char: '🐒', id: 'monkey', getMsg: () => "猿「見ざる、言わざる、空見ざる、だ。」" }
-        ]},
-        "sendai": { name: "錆びた鉄の杜・仙台", exits: { down: "nikko", right: "aomori" }, objects: [
-            { x: 224, y: 224, type: 'item', char: '📄', id: 'p3' }
-        ]},
-        "aomori": { name: "凍土の果て・青森", exits: { left: "sendai", up: "fuji_gate" }, objects: [
-            { x: 128, y: 64, type: 'npc', char: '🍎', id: 'farmer', getMsg: () => "農家「土も死んだ。紙を折っても実りはしねえ…」" }
-        ]},
-        "fuji_gate": { name: "富士・青木ヶ原サーバー", exits: { down: "aomori", up: "fuji_summit" }, objects: [
-            { x: 192, y: 32, type: 'item', char: '📄', id: 'p4' }
-        ]},
-        "fuji_summit": { name: "富士山頂・心臓部", exits: { down: "fuji_gate" }, objects: [
-            { x: 192, y: 64, type: 'npc', char: '🏯', id: 'gate', getMsg: () => state.origami >= 1000 ? "（1000枚の折り紙が共鳴している。Aボタンで捧げますか？）" : "（まだ1000枚に届いていない…）" }
-        ]},
-        "kyoto": { name: "電脳の古都・京都", exits: { left: "roppongi" }, objects: [
-            { x: 128, y: 128, type: 'npc', char: '💃', id: 'maiko', getMsg: () => "舞妓「紙を集める御方どすか…？ 覚悟はおありで？」",
-              choices: [{ t: "「世界を救いたい」", k: -10, f: "maiko_promise" }, { t: "「ただの暇つぶしだ」", k: 10 }] }
-        ]}
-    };
-
-    function renderMap() {
-        const map = MAPS[state.currentMap];
-        document.getElementById('area-label').innerText = map.name;
-        const layer = document.getElementById('objects-layer'); layer.innerHTML = "";
-        map.objects.forEach(obj => {
-            if (state.flags[state.currentMap + '_' + obj.id]) return;
-            const el = document.createElement('div'); el.className = 'entity'; el.innerText = obj.char;
-            el.style.left = obj.x + 'px'; el.style.top = obj.y + 'px'; layer.appendChild(el);
-        });
-    }
-
-    function move(dx, dy) {
-        if (state.isTalking) return;
-        let nx = state.pos.x + dx, ny = state.pos.y + dy;
-        const exits = MAPS[state.currentMap].exits;
-        if (nx > 368 && exits.right) { state.currentMap = exits.right; state.pos.x = 0; }
-        else if (nx < 0 && exits.left) { state.currentMap = exits.left; state.pos.x = 368; }
-        else if (ny > 368 && exits.down) { state.currentMap = exits.down; state.pos.y = 0; }
-        else if (ny < 0 && exits.up) { state.currentMap = exits.up; state.pos.y = 368; }
-        else { state.pos.x = Math.max(0, Math.min(368, nx)); state.pos.y = Math.max(0, Math.min(368, ny)); }
-        updatePlayer(); renderMap();
-    }
-
-    function updatePlayer() {
-        const p = document.getElementById('player'); p.style.left = state.pos.x + 'px'; p.style.top = state.pos.y + 'px';
-    }
-
-    function interact() {
-        if (state.isTalking) {
-            document.getElementById('msg-box').style.display = 'none';
-            state.isTalking = false; return;
-        }
-        const map = MAPS[state.currentMap];
-        map.objects.forEach(obj => {
-            if (Math.abs(state.pos.x - obj.x) + Math.abs(state.pos.y - obj.y) <= 32 && !state.flags[state.currentMap + '_' + obj.id]) {
-                const msgBox = document.getElementById('msg-box');
-                const msgText = document.getElementById('msg-text');
-                const choices = document.getElementById('choices');
-                choices.innerHTML = "";
-                
-                if(obj.id === 'gate' && state.origami >= 1000) return runEnding();
-                
-                msgText.innerText = obj.getMsg ? obj.getMsg() : "（反応がない）";
-                if(obj.choices && !state.isCleared) {
-                    obj.choices.forEach(c => {
-                        const b = document.createElement('button'); b.className = 'choice-btn'; b.innerText = c.t;
-                        b.onclick = () => { state.karma += c.k; if(c.f) state.flags[c.f] = true; interact(); document.getElementById('karma').innerText = state.karma; };
-                        choices.appendChild(b);
-                    });
-                }
-                if(obj.type === 'item') { state.origami += 100; state.flags[state.currentMap+'_'+obj.id] = true; document.getElementById('count').innerText = state.origami; }
-                if(obj.effect) obj.effect();
-                msgBox.style.display = 'block'; state.isTalking = true;
-            }
-        });
-    }
-
-    function runEnding() {
-        state.isCleared = true;
-        let title = "", desc = "";
-        const k = state.karma, f = state.flags;
-        if (k === 0 && f.maid_promise && f.maiko_promise) { title = "【End: 真・千羽鶴】"; desc = "世界に本物の色が戻った。"; }
-        else if (k >= 50) { title = "【End: 空の簒奪者】"; desc = "貴方は新たな独裁者となった。"; }
-        else if (k <= -30) { title = "【End: 沈黙の救済】"; desc = "空は暗いままだが、人々の心は温かい。"; }
-        else if (f.maid_promise) { title = "【End: 電子の夢】"; desc = "メイドと二人、永遠のデータへ。"; }
-        else if (f.maiko_promise) { title = "【End: 雅な終焉】"; desc = "美しいホログラムの檻。"; }
-        else if (k > 10 && k < 40) { title = "【End: 偽りの安寧】"; desc = "何も変わらない、ただの明日。"; }
-        else if (k < 0) { title = "【End: 小鳥の嘆き】"; desc = "人類は消え、鳥だけが舞う世界。"; }
-        else { title = "【End: 灰色の帰還】"; desc = "1000枚の紙は、ただのゴミとなった。"; }
-        
-        document.getElementById('msg-text').innerHTML = `<b style='color:gold'>${title}</b><br>${desc}`;
-        document.getElementById('msg-box').style.display = 'block';
-    }
-
-    renderMap(); updatePlayer();
-</script>
+    <script src="maps.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
