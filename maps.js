@@ -1,177 +1,108 @@
 const MAPS = {
     "shibuya_station": {
-        name: "渋谷駅前",
-        layout: [
-            [1,1,1,1,1,1,0,1,1,1,1,1,1], // 上：宮下公園
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,1,1,1,0,1,1,1,0,1,0,1],
-            [1,0,1,0,0,0,0,0,1,0,1,0,1],
-            [1,0,1,0,1,1,1,0,1,0,0,0,0], // 右：裏路地
-            [1,0,0,0,0,0,0,0,0,0,1,0,1],
-            [1,1,1,1,1,1,0,1,1,1,1,1,1]  // 下：交差点
-        ],
+        name: "渋谷駅前広場",
+        layout: Array(12).fill(Array(13).fill(0)), // 壁なしの更地
         exits: { 
-            up: { map: "miyashita_park", x: 6, y: 4 },
-            right: { map: "shibuya_backstreet", x: 0, y: 3 },
+            up: { map: "miyashita_park", x: 6, y: 10 },
+            right: { map: "shibuya_backstreet", x: 0, y: 4 },
             down: { map: "shibuya_crossroad", x: 6, y: 0 }
         },
         events: [
-            { id: 'st1', x: 1, y: 1, char: '🗑️', msg: "ゴミ箱の底に、誰かが隠したような折り紙があった。" },
-            { id: 'o4', x: 11, y: 1, type: 'origami', char: '✨', msg: "駅看板の裏。風に耐えていた1枚を見つけた。" },
-            { id: 'st4', x: 3, y: 5, char: '🐕', msg: "ハチ公像。かつての待ち合わせ場所は、今や祈りの祭壇だ。" }
+            { id: 'st1', x: 2, y: 2, char: '🗑️', msg: "ゴミ箱。底に沈んだ黄色い紙は、かつて誰かが捨てた『絶望』の形だ。" },
+            { id: 'o1', x: 10, y: 1, type: 'origami', char: '✨', msg: "駅看板の裏。祈るように折られた1枚を見つけた。" },
+            { id: 'st2', x: 3, y: 5, char: '🐕', msg: "ハチ公像。彼はもう、誰も待っていない。ただ、風が吹くのを待っている。" }
         ]
     },
     "shibuya_crossroad": {
         name: "スクランブル交差点",
-        layout: [
-            [1,1,1,1,1,1,0,1,1,1,1,1,1], // 上：駅前
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,1,0,0,0,0,0,0,0,1,0,1],
-            [0,0,0,0,1,1,0,1,1,0,0,0,0], // 左：センター街、右：百貨店
-            [1,0,1,0,0,0,0,0,0,0,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,0,1,1,1,1,1,1]  // 下：駅構内
-        ],
+        layout: Array(12).fill(Array(13).fill(0)),
         exits: { 
             up: { map: "shibuya_station", x: 6, y: 5 },
-            left: { map: "center_gai", x: 11, y: 3 },
-            right: { map: "department_store", x: 0, y: 3 },
+            left: { map: "center_gai", x: 11, y: 5 },
+            right: { map: "department_store", x: 1, y: 5 },
             down: { map: "shibuya_station_hall", x: 6, y: 1 }
         },
         events: [
-            { id: 'o1', x: 1, y: 1, type: 'origami', char: '✨', msg: "大型ビジョンの影に、黄色い紙が挟まっていた。" },
-            { id: 'neta1', x: 6, y: 3, char: '📺', msg: "砂嵐のモニター。かすかに『鳥よ、舞い降りろ』と見える。" }
+            { id: 'o2', x: 1, y: 1, type: 'origami', char: '✨', msg: "大型ビジョンの死角に、黄金の光が挟まっていた。" },
+            { id: 'n1', x: 6, y: 6, char: '📺', msg: "砂嵐のモニター。かつてここには、嘘と本当が混ざり合って流れていた。" }
         ]
     },
     "center_gai": {
-        name: "センター街 - 廃墟",
-        layout: [
-            [1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,0,0,0,1,0,0,0,0,0,0,0,1],
-            [1,0,1,0,1,0,1,1,1,1,1,0,1],
-            [1,0,1,0,0,0,0,0,0,0,0,0,0], // 右：交差点
-            [1,0,1,1,1,1,1,1,1,1,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1]
-        ],
-        exits: { right: { map: "shibuya_crossroad", x: 0, y: 3 } },
+        name: "センター街 - 寂寥",
+        layout: Array(12).fill(Array(13).fill(0)),
+        exits: { right: { map: "shibuya_crossroad", x: 1, y: 5 } },
         events: [
-            { id: 'o101', x: 1, y: 1, type: 'origami', char: '✨', msg: "看板の残骸の下に、綺麗なままの折り紙があった。" },
-            { id: 'cg1', x: 5, y: 1, char: '🍔', msg: "古いハンバーガーショップ。メニューには『鳥の餌』と手書きされている。" }
+            { id: 'o3', x: 5, y: 10, type: 'origami', char: '✨', msg: "潰れたショップの入り口。シャッターの隙間に1枚。" },
+            { id: 'n2', x: 2, y: 3, char: '🍔', msg: "古いメニュー表。『本日、全人類無料』と殴り書きされている。" }
         ]
     },
     "department_store": {
         name: "封鎖された百貨店",
-        layout: [
-            [1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,0,0,0,0,0,1,0,0,0,0,0,1],
-            [1,0,1,1,1,0,1,0,1,1,1,0,1],
-            [0,0,0,0,0,0,0,0,0,0,1,0,1], // 左：交差点
-            [1,0,1,1,1,1,1,1,1,0,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1]
-        ],
-        exits: { left: { map: "shibuya_crossroad", x: 12, y: 3 } },
+        layout: Array(12).fill(Array(13).fill(0)),
+        exits: { left: { map: "shibuya_crossroad", x: 11, y: 5 } },
         events: [
-            { id: 'o102', x: 7, y: 1, type: 'origami', char: '✨', msg: "ショーケースの中に、1枚の折り紙が飾られていた。" },
-            { id: 'ds1', x: 1, y: 5, char: '👗', msg: "ボロボロのマネキン。首元に折り紙のブローチが刺さっている。" }
+            { id: 'bonus1', x: 10, y: 10, type: 'origami_bonus', char: '🎁', msg: "忘れ物センターの箱。3枚の折り紙が、静かに眠っていた。" },
+            { id: 'n3', x: 6, y: 2, char: '👗', msg: "マネキン。その指先は、遠い空を指差している。" }
         ]
     },
     "shibuya_backstreet": {
         name: "渋谷裏路地",
-        layout: [
-            [1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,1,1,1,1,1,1,1,1,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0], // 右：雑居ビル
-            [0,0,0,0,0,0,0,0,0,0,1,0,1], // 左：駅前
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1]
-        ],
+        layout: Array(12).fill(Array(13).fill(0)),
         exits: { 
-            left: { map: "shibuya_station", x: 12, y: 4 },
-            right: { map: "multi_tenant_building", x: 0, y: 3 }
+            left: { map: "shibuya_station", x: 11, y: 4 },
+            right: { map: "ghost_building", x: 1, y: 5 }
         },
         events: [
-            { id: 'o5', x: 11, y: 1, type: 'origami', char: '✨', msg: "配電盤の隙間に、黄金の紙が挟まっていた。" }
+            { id: 'o4', x: 8, y: 8, type: 'origami', char: '✨', msg: "配電盤の中。火花が散る隣で、紙は耐えていた。" },
+            { id: 'n4', x: 4, y: 1, char: '📱', msg: "スマホ。画面が割れている。'最後の着信：教祖様'" }
         ]
     },
-    "multi_tenant_building": {
-        name: "謎の雑居ビル",
-        layout: [
-            [1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,0,0,0,1,0,0,0,1,0,0,0,1],
-            [1,0,1,0,1,0,1,0,1,0,1,0,1],
-            [0,0,0,0,0,0,0,0,0,0,0,0,1], // 左：裏路地
-            [1,1,1,1,1,1,1,1,1,1,1,1,1]
-        ],
-        exits: { left: { map: "shibuya_backstreet", x: 12, y: 3 } },
+    "ghost_building": {
+        name: "幽霊ビル",
+        layout: Array(12).fill(Array(13).fill(0)),
+        exits: { left: { map: "shibuya_backstreet", x: 11, y: 3 } },
         events: [
-            { id: 'o103', x: 11, y: 1, type: 'origami', char: '✨', msg: "古いFAX機から、折り紙が1枚吐き出されていた。" }
+            { id: 'o5', x: 6, y: 6, type: 'origami', char: '✨', msg: "エレベーターの底。奈落の縁で見つけた1枚。" }
         ]
     },
     "miyashita_park": {
-        name: "宮下公園",
-        layout: [
-            [1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,1,1,0,1,1,0,1,1,0,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,0,1,1,1,1,1,1]  // 下：駅前
-        ],
+        name: "宮下公園跡",
+        layout: Array(12).fill(Array(13).fill(0)),
         exits: { down: { map: "shibuya_station", x: 6, y: 1 } },
         events: [
-            { id: 'o104', x: 1, y: 3, type: 'origami', char: '✨', msg: "枯れた植木鉢の中に、鮮やかな青い折り紙があった。" }
+            { id: 'o6', x: 1, y: 1, type: 'origami', char: '✨', msg: "ベンチの上。誰かが忘れていった、最後の祈りだ。" },
+            { id: 'n5', x: 10, y: 2, char: '⛲', msg: "枯れた噴水。水底に沈んでいるのは、大量の『後悔』だ。" }
         ]
     },
     "shibuya_station_hall": {
-        name: "駅構内",
-        layout: [
-            [1,1,1,1,1,1,0,1,1,1,1,1,1], // 上：交差点
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,1,0,1,1,1,1,1,0,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,0,1,1,1,1,1,1]  // 下：地下迷宮
-        ],
+        name: "駅構内 - 終着点",
+        layout: Array(12).fill(Array(13).fill(0)),
         exits: { 
             up: { map: "shibuya_crossroad", x: 6, y: 5 },
             down: { map: "shibuya_underground", x: 6, y: 1 }
         },
         events: [
-            { id: 'o3', x: 1, y: 1, type: 'origami', char: '✨', msg: "改札機の中に、折り紙があった。" },
-            { id: 'bonus1', x: 11, y: 1, type: 'origami_bonus', char: '🎁', msg: "忘れ物センターの箱を開けた！一気に3枚の折り紙を見つけた！" }
+            { id: 'o7', x: 6, y: 8, type: 'origami', char: '✨', msg: "自動券売機。行き先はすべて『無』になっている。" }
         ]
     },
     "shibuya_underground": {
         name: "渋谷地下迷宮",
-        layout: [
-            [1,1,1,1,1,1,0,1,1,1,1,1,1], // 上：駅構内
-            [1,0,0,0,1,0,0,0,1,0,0,0,1],
-            [1,0,1,0,1,1,1,0,1,1,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,0,1,1,1,1,1,1]  // 下：聖域
-        ],
+        layout: Array(12).fill(Array(13).fill(0)),
         exits: { 
-            up: { map: "shibuya_station_hall", x: 6, y: 3 },
+            up: { map: "shibuya_station_hall", x: 6, y: 4 },
             down: { map: "shibuya_sanctuary", x: 6, y: 1 }
         },
         events: [
-            { id: 'o10', x: 5, y: 1, type: 'origami', char: '✨', msg: "湿った地下道の隅で、輝く紙を見つけた。" }
+            { id: 'o8', x: 11, y: 10, type: 'origami', char: '✨', msg: "湿った壁の隙間。暗闇の中でこれだけが光っていた。" }
         ]
     },
     "shibuya_sanctuary": {
         name: "最下層・聖域",
-        layout: [
-            [1,1,1,1,1,1,0,1,1,1,1,1,1], // 上：地下迷宮
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,1,1,1,1,1,1,1,1,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1]
-        ],
-        exits: { up: { map: "shibuya_underground", x: 6, y: 3 } },
+        layout: Array(12).fill(Array(13).fill(0)),
+        exits: { up: { map: "shibuya_underground", x: 6, y: 10 } },
         events: [
-            { id: 'guide', x: 6, y: 3, char: '🐤', msg: "「教祖様。100枚の紙が揃う時、静寂は終わります。」" },
-            { id: 'bonus2', x: 1, y: 1, type: 'origami_bonus', char: '✨', msg: "聖域の隅に、5枚の折り紙が美しく並べられている。" }
+            { id: 'bonus2', x: 6, y: 6, type: 'origami_bonus', char: '🕊️', msg: "聖域の祭壇。5枚の折り紙が、千羽鶴の誕生を待っている。" },
+            { id: 'guide', x: 6, y: 3, char: '🐤', msg: "「教祖様。CHAPTER 1はまもなく終わります。世界の修復を信じて。」" }
         ]
     }
 };
