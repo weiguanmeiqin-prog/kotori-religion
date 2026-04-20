@@ -10,31 +10,41 @@ const MONOLOGUES = {
     1: "「1枚。指先が、紙の角に馴染んできた。」",
     5: "「5枚。かつてここには多くの音が溢れていたという。今は、私の足音だけ。」",
     10: "「10枚。この紙を折る時だけ、私は自分が人間だったことを思い出す。」",
-    15: "「15枚。2XXX年の風は、どこか遠い海のような匂いがする。」",
     20: "「20枚。……誰かが後ろを歩いている気がした。でも、振り返れば空虚な街だけ。」",
+    50: "「50枚。半分まで来た。世界の輪郭が、少しずつ鮮明になっていく。」",
     100: "「100枚。……千羽鶴への最初の1ページが書き終わった。CHAPTER 1 END.」"
 };
+
 function renderMap() {
     const map = MAPS[state.currentMap];
     const screen = document.getElementById('game-screen');
+    if (!screen) return;
+
+    // 画面の基本色を強制的に「廃墟の色」に戻す（ホワイトアウト防止）
+    screen.style.backgroundColor = "#1a1a1a";
     document.getElementById('map-name').textContent = map.name;
     document.getElementById('count-display').textContent = `ORIGAMI: ${state.origamiCount}/100`;
     
-    screen.innerHTML = ''; // 一旦クリア
+    screen.innerHTML = ''; 
 
-    // 1. イベントオブジェクト（ゴミ箱や折り紙）を座標に直接配置
+    // イベントオブジェクトを配置
     map.events.forEach(ev => {
         if (!state.history.includes(ev.id)) {
             const div = document.createElement('div');
-            div.className = 'cell';
+            div.style.position = 'absolute';
+            div.style.width = '32px';
+            div.style.height = '32px';
             div.style.left = (ev.x * 32) + 'px';
             div.style.top = (ev.y * 32) + 'px';
+            div.style.display = 'flex';
+            div.style.justifyContent = 'center';
+            div.style.alignSelf = 'center';
             div.textContent = ev.char;
             screen.appendChild(div);
         }
     });
 
-    // 2. プレイヤーを配置
+    // プレイヤー配置
     const p = document.createElement('div');
     p.id = 'player';
     p.textContent = '🐥';
@@ -43,26 +53,20 @@ function renderMap() {
     p.style.height = '32px';
     p.style.left = (state.x * 32) + 'px';
     p.style.top = (state.y * 32) + 'px';
+    p.style.display = 'flex';
+    p.style.justifyContent = 'center';
+    p.style.alignItems = 'center';
     screen.appendChild(p);
-
-    // 3. 影のグリッチ演出（稀に後ろに誰かいる）
-    if (Math.random() < 0.10) {
-        const shadow = document.createElement('div');
-        shadow.className = 'cell';
-        shadow.textContent = '👤';
-        shadow.style.left = (state.x * 32) + 'px';
-        shadow.style.top = ((state.y + 1) * 32) + 'px'; // 一歩後ろ
-        shadow.style.opacity = "0.3";
-        screen.appendChild(shadow);
-        setTimeout(() => shadow.remove(), 200);
-    }
 }
 
 function typeWriter(text) {
     state.isTyping = true;
     const dialog = document.getElementById('dialogue-text');
     dialog.textContent = "";
-    dialog.style.color = (state.origamiCount % 10 === 0 && state.origamiCount > 0) ? "gold" : "white";
+    
+    // 金色にするのは「10枚ごと」かつ「0枚じゃない」ときだけ！
+    const isSpecial = state.origamiCount > 0 && state.origamiCount % 10 === 0;
+    dialog.style.color = isSpecial ? "gold" : "white";
     
     let i = 0;
     const timer = setInterval(() => {
@@ -71,16 +75,12 @@ function typeWriter(text) {
         if (i >= text.length) {
             clearInterval(timer);
             state.isTyping = false;
-            if (state.origamiCount >= 100) handleGameEnd();
+            // 100枚達成時のみ、ホワイトアウトさせる
+            if (state.origamiCount >= 100) {
+                setTimeout(handleGameEnd, 1000);
+            }
         }
     }, 30);
-}
-
-function showPhantomVision() {
-    const screen = document.getElementById('game-screen');
-    const originalBg = screen.style.backgroundColor;
-    screen.style.backgroundColor = "#d2b48c"; // セピア色
-    setTimeout(() => { screen.style.backgroundColor = originalBg; }, 100);
 }
 
 function handleInput(e) {
@@ -93,10 +93,9 @@ function handleInput(e) {
     if (e.key === "ArrowLeft") nextX--;
     if (e.key === "ArrowRight") nextX++;
 
-    const mapWidth = map.layout[0].length;
-    const mapHeight = map.layout.length;
+    const mapWidth = 13; // 固定幅
+    const mapHeight = 12; // 固定高
 
-    // エリア移動
     if (nextX >= mapWidth && map.exits.right) {
         const ex = map.exits.right; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
     } else if (nextX < 0 && map.exits.left) {
@@ -105,11 +104,16 @@ function handleInput(e) {
         const ex = map.exits.down; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
     } else if (nextY < 0 && map.exits.up) {
         const ex = map.exits.up; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
-    } else if (map.layout[nextY] && map.layout[nextY][nextX] === 0) {
+    } else {
+        // 壁（1）の概念を無視してどこでも歩ける
         state.x = nextX; state.y = nextY;
         
-        // 幻影演出
-        if (Math.random() < 0.02) showPhantomVision();
+        // 幻影演出（低確率）
+        if (Math.random() < 0.02) {
+            const scr = document.getElementById('game-screen');
+            scr.style.backgroundColor = "#443322"; 
+            setTimeout(() => { scr.style.backgroundColor = "#1a1a1a"; }, 100);
+        }
 
         const ev = map.events.find(e => e.x === state.x && e.y === state.y);
         if (ev && !state.history.includes(ev.id)) {
@@ -129,11 +133,9 @@ function handleInput(e) {
 }
 
 function handleGameEnd() {
-    document.body.style.transition = "background-color 3s";
+    document.body.style.transition = "background-color 4s";
     document.body.style.backgroundColor = "white";
-    setTimeout(() => {
-        alert("CHAPTER 1 修復完了。……教祖様、次は新宿でお会いしましょう。");
-    }, 3000);
+    alert("CHAPTER 1 修復完了。\n教祖様、光の向こう側でお待ちしています。");
 }
 
 document.addEventListener('DOMContentLoaded', () => {
