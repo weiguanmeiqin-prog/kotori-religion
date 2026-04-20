@@ -1,9 +1,16 @@
 const state = {
-    x: 6, y: 11, // スタート位置
-    currentMap: "shibuya_crossroad",
+    x: 6, y: 5,
+    currentMap: "shibuya_station",
     origamiCount: 0,
     isTyping: false,
-    history: [] // 調べた場所を記録
+    history: []
+};
+
+const MONOLOGUES = {
+    10: "「10枚。指先が、紙の角に馴染んできた。」",
+    20: "「20枚。かつてここには100万人がいたという。今は私と、この紙だけ。」",
+    30: "「30枚。2XXX年の風は冷たい。でも、この紙は少し温かい気がする。」",
+    100: "「100枚。……千羽鶴への、最初の1ページが書き終わった。\n（CHAPTER 1 END: 遠くで、誰かが呼ぶ声がした。）」"
 };
 
 function renderMap() {
@@ -11,7 +18,6 @@ function renderMap() {
     const screen = document.getElementById('game-screen');
     screen.innerHTML = '';
 
-    // マップが広い場合、プレイヤーを中心に表示（カメラ追従の簡易版）
     map.layout.forEach((row, y) => {
         row.forEach((cell, x) => {
             const div = document.createElement('div');
@@ -21,25 +27,19 @@ function renderMap() {
         });
     });
 
-    // イベント配置
     map.events.forEach(ev => {
         const cell = document.getElementById(`cell-${ev.x}-${ev.y}`);
-        if (cell) {
-            // すでに拾った折り紙は表示しない
-            if (ev.type === 'origami' && state.history.includes(ev.id)) {
-                cell.textContent = '';
-            } else {
-                cell.textContent = ev.char;
-            }
+        if (cell && !state.history.includes(ev.id)) {
+            cell.textContent = ev.char;
         }
     });
 
     const p = document.createElement('div');
     p.id = 'player';
     p.textContent = '🐥';
-    p.style.position = 'absolute';
     p.style.left = (state.x * 32) + 'px';
     p.style.top = (state.y * 32) + 'px';
+    p.style.position = 'absolute';
     screen.appendChild(p);
 }
 
@@ -47,6 +47,10 @@ function typeWriter(text) {
     state.isTyping = true;
     const dialog = document.getElementById('dialogue-text');
     dialog.textContent = "";
+    
+    // 10枚ごとの演出：色を変える
+    dialog.style.color = (state.origamiCount % 10 === 0 && state.origamiCount > 0) ? "gold" : "white";
+    
     let i = 0;
     const timer = setInterval(() => {
         dialog.textContent += text[i];
@@ -54,47 +58,49 @@ function typeWriter(text) {
         if (i >= text.length) {
             clearInterval(timer);
             state.isTyping = false;
-            // 100枚達成チェック
             if(state.origamiCount >= 100) {
-                setTimeout(() => alert("「千羽鶴まで、あと900枚…」 CHAPTER 1 CLEAR"), 1000);
+                setTimeout(() => { document.body.style.backgroundColor = "black"; alert("CHAPTER 2 制作決定..."); }, 2000);
             }
         }
-    }, 30);
+    }, 40);
 }
 
 function handleInput(e) {
     if (state.isTyping) return;
-    let nextX = state.x;
-    let nextY = state.y;
+    let nextX = state.x; let nextY = state.y;
+    const map = MAPS[state.currentMap];
 
     if (e.key === "ArrowUp") nextY--;
     if (e.key === "ArrowDown") nextY++;
     if (e.key === "ArrowLeft") nextX--;
     if (e.key === "ArrowRight") nextX++;
 
-    const map = MAPS[state.currentMap];
-
-    // マップ移動
-    if (nextY < 0 && map.exits.up) {
-        state.currentMap = map.exits.up.map; state.y = 12; renderMap(); return;
-    }
-    if (nextY > 12 && map.exits.down) {
-        state.currentMap = map.exits.down.map; state.y = 0; renderMap(); return;
-    }
-
-    if (map.layout[nextY] && map.layout[nextY][nextX] === 0) {
+    // マップ移動処理
+    if (nextX >= 13 && map.exits.right) {
+        const ex = map.exits.right; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
+    } else if (nextX < 0 && map.exits.left) {
+        const ex = map.exits.left; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
+    } else if (nextY >= 12 && map.exits.down) {
+        const ex = map.exits.down; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
+    } else if (nextY < 0 && map.exits.up) {
+        const ex = map.exits.up; state.currentMap = ex.map; state.x = ex.x; state.y = ex.y;
+    } else if (map.layout[nextY] && map.layout[nextY][nextX] === 0) {
         state.x = nextX; state.y = nextY;
-        const event = map.events.find(ev => ev.x === state.x && ev.y === state.y);
-        
-        if (event && !state.history.includes(event.id)) {
-            if (event.type === 'origami') {
-                state.origamiCount++;
-                state.history.push(event.id);
-                typeWriter(`${event.msg}（現在の折り紙: ${state.origamiCount}/100）`);
-            } else {
-                typeWriter(event.msg);
-            }
+        const ev = map.events.find(e => e.x === state.x && e.y === state.y);
+        if (ev && !state.history.includes(ev.id)) {
+            if (ev.type === 'origami') state.origamiCount += 1;
+            if (ev.type === 'origami_bonus') state.origamiCount += 3;
+            
+            state.history.push(ev.id);
+            let finalMsg = ev.msg + ` (${state.origamiCount}/100)`;
+            if (MONOLOGUES[state.origamiCount]) finalMsg += "\n\n" + MONOLOGUES[state.origamiCount];
+            typeWriter(finalMsg);
         }
     }
     renderMap();
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderMap();
+    window.addEventListener('keydown', handleInput);
+});
