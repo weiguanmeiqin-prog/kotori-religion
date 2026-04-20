@@ -102,7 +102,7 @@ const MAPS = {
         exits: { up: { map: "shibuya_underground", x: 6, y: 10 } },
         events: [
             { id: 'bonus2', x: 6, y: 6, type: 'origami_bonus', char: '🕊️', msg: "聖域の祭壇。5枚の折り紙が、千羽鶴の誕生を待っている。" },
-            { id: 'guide', x: 6, y: 3, char: '🐤', msg: "「教祖様。CHAPTER 1はまもなく終わります。世界の修復を信じて。」" }
+            { id: 'guide', x: 6, y: 3, char: '🐤', msg: "「教祖様。世界の修復を信じて。」" }
         ]
     }
 };
