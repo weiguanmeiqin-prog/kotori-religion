@@ -17,7 +17,40 @@ const MONOLOGUES = {
     50: "「50枚。半分だ。世界のノイズが少し静かになった気がする。」",
     100: "「100枚。……千羽鶴が完成した。 CHAPTER 1 END」"
 };
+// マップを自動生成する関数（13x12のランダム廃墟）
+function generateRandomRuins() {
+    const layout = [];
+    for (let y = 0; y < 12; y++) {
+        const row = [];
+        for (let x = 0; x < 13; x++) {
+            // 20%の確率で「崩れた瓦礫(1)」を配置、それ以外は「通路(0)」
+            row.push(Math.random() < 0.2 ? 1 : 0);
+        }
+        layout.push(row);
+    }
+    
+    // プレイヤーの周り(6,5)だけは必ず通路にする
+    layout[5][6] = 0;
+    layout[4][6] = 0;
+    layout[6][6] = 0;
+    layout[5][5] = 0;
+    layout[5][7] = 0;
+    
+    return layout;
+}
 
+// エリア移動時に「迷宮」だった場合、マップを再構築する
+function enterInfiniteLabyrinth() {
+    const map = MAPS["infinite_labyrinth"];
+    map.layout = generateRandomRuins();
+    
+    // ランダムな位置に折り紙を1枚配置
+    const rx = Math.floor(Math.random() * 11) + 1;
+    const ry = Math.floor(Math.random() * 10) + 1;
+    map.events = [
+        { id: 'random_' + Date.now(), x: rx, y: ry, type: 'origami', char: '✨', msg: "ノイズの狭間に、震える1枚があった。" }
+    ];
+}
 function renderMap() {
     const map = MAPS[state.currentMap];
     const screen = document.getElementById('game-screen');
