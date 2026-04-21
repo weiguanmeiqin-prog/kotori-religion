@@ -33,28 +33,42 @@ const MONOLOGUES = {
     100: "「100枚。……千羽鶴が完成した。 CHAPTER 1 END（静かなノイズ）」"
 };
 
-// 迷宮のランダムメッセージ
-const LABYRINTH_MESSAGES = [
-    "ノイズの狭間に、震える1枚があった。",
-    "誰かの「助けて」という文字が、折り紙の形を保っている。",
-    "黄金の紙だ。これだけは、この世界の腐食を拒んでいる。",
-    "「……みつ……けた……」 どこからか声がした気がした。",
-    "0と1の隙間に、物理的な感触を持った紙が落ちている。",
-    "これ以上拾ってはいけない。そんな気がしたが、手が動いた。",
-    "かつての若者が綴った、愛の告白が書かれた折り紙だ。"
-];
+const state = {
+    x: 6,
+    y: 5,
+    currentMap: "shibuya_station",
+    origamiCount: 0,
+    isTyping: false,
+    history: [],
+    steps: 0,
+    isGlitching: false,
+    eventCounts: {}, 
+};
 
-// 2. イベント処理（ここが心臓部です）
+// --- 【移動処理：ここが重要！】 ---
+function moveArea(exitData) {
+    if (!exitData || !exitData.map) return;
+
+    // もし行き先のマップがまだ存在しないなら、無限生成する！
+    if (!MAPS[exitData.map]) {
+        generateInfiniteMap(exitData.map);
+    }
+
+    state.currentMap = exitData.map;
+    state.x = exitData.x ?? 6;
+    state.y = exitData.y ?? 5;
+
+    renderMap();
+}
+
 function checkEvents(map) {
     const ev = map.events.find(ev => ev.x === state.x && ev.y === state.y);
     if (!ev) return;
 
-    // 回数カウント
     if (!state.eventCounts[ev.id]) state.eventCounts[ev.id] = 0;
     state.eventCounts[ev.id]++;
     const count = state.eventCounts[ev.id];
 
-    // ✨ 折り紙の処理
     if (ev.type === 'origami') {
         if (!state.history.includes(ev.id)) {
             state.origamiCount++;
@@ -71,17 +85,13 @@ function checkEvents(map) {
         return;
     }
 
-    // 一般メッセージの抽選
     let displayMsg = Array.isArray(ev.msg) ? 
         ev.msg[Math.min(count - 1, ev.msg.length - 1)] : ev.msg;
 
-    // 特殊演出
     applyWeirdEffect(ev.id, count);
-
     typeWriter(displayMsg);
 }
 
-// 特殊演出
 function applyWeirdEffect(evId, count) {
     const screen = document.getElementById('game-screen');
     const p = document.getElementById('player');
@@ -96,33 +106,28 @@ function applyWeirdEffect(evId, count) {
         setTimeout(() => p.style.animation = "none", 2000);
     }
 }
+
 function renderMap() {
     const screen = document.getElementById('game-screen');
+    if (!screen) return;
     screen.innerHTML = '';
-    const mapData = MAPS[currentMap];
+    const mapData = MAPS[state.currentMap];
     
-    // --- 【追加】折り紙のランダム復活ロジック ---
-    // エリアに入った時、30%の確率で新しい折り紙がどこかに現れる
-    if (Math.random() < 0.5) { 
+    // エリア移動時にランダムで新しい折り紙を1つだけ生成（低確率）
+    if (Math.random() < 0.2) { 
         const randomX = Math.floor(Math.random() * 13);
         const randomY = Math.floor(Math.random() * 12);
-        
-        // すでにイベントがある場所には作らない
         const exists = mapData.events.find(e => e.x === randomX && e.y === randomY);
         if (!exists) {
             mapData.events.push({
-                id: 'gen_' + Date.now(), // 重複しないID
-                x: randomX,
-                y: randomY,
-                type: 'origami',
-                char: '✨',
+                id: 'gen_' + Date.now(),
+                x: randomX, y: randomY,
+                type: 'origami', char: '✨',
                 msg: "ノイズの隙間に、新たな折り紙が結実していた。"
             });
         }
     }
-    // ---------------------------------------
 
-    // 以下、元々の描画処理 ...
     mapData.events.forEach(event => {
         const div = document.createElement('div');
         div.className = 'cell';
@@ -132,34 +137,17 @@ function renderMap() {
         screen.appendChild(div);
     });
     
-    // 🐥を表示
     const playerDiv = document.createElement('div');
     playerDiv.id = 'player';
     playerDiv.textContent = '🐥';
-    updatePlayerPosition(playerDiv);
+    playerDiv.style.left = (state.x * 32) + 'px';
+    playerDiv.style.top = (state.y * 32) + 'px';
     screen.appendChild(playerDiv);
     
     document.getElementById('map-name').textContent = mapData.name;
+    document.getElementById('origami-count').textContent = state.origamiCount;
 }
 
-function moveArea(exitData) {
-    if (typeof exitData === 'string') {
-        state.currentMap = exitData;
-        state.x = 6; state.y = 5;
-    } else if (exitData && exitData.map) {
-        state.currentMap = exitData.map;
-        state.x = exitData.x ?? 6;
-        state.y = exitData.y ?? 5;
-    } else {
-        state.currentMap = "shibuya_station";
-        state.x = 6; state.y = 5;
-    }
-
-    if (state.currentMap === "infinite_labyrinth") enterInfiniteLabyrinth();
-    renderMap();
-}
-
-// 4. 入力とシステム
 function handleInput(e) {
     if (state.isTyping) return;
     const map = MAPS[state.currentMap];
@@ -173,11 +161,13 @@ function handleInput(e) {
     if (e.key === "ArrowLeft") nextX--;
     if (e.key === "ArrowRight") nextX++;
 
+    // 画面外に出た時の移動処理
     if (nextX >= 13) { moveArea(map.exits?.right); return; }
     if (nextX < 0) { moveArea(map.exits?.left); return; }
     if (nextY >= 12) { moveArea(map.exits?.down); return; }
     if (nextY < 0) { moveArea(map.exits?.up); return; }
 
+    // 移動可能かチェック（0なら歩ける）
     if (map.layout && map.layout[nextY] && map.layout[nextY][nextX] === 0) {
         state.x = nextX;
         state.y = nextY;
@@ -192,8 +182,6 @@ function typeWriter(text) {
     const dialog = document.getElementById('dialogue-text');
     if(!dialog) return;
     dialog.textContent = "";
-    const isSpecial = state.origamiCount > 0 && state.origamiCount % 10 === 0;
-    dialog.style.color = isSpecial ? "gold" : "white";
     
     let i = 0;
     const timer = setInterval(() => {
@@ -206,16 +194,14 @@ function typeWriter(text) {
         }
     }, 30);
 }
-// --- 【魂を刻んだ無限生成エンジン】 ---
+
 function generateInfiniteMap(mapId) {
     if (MAPS[mapId]) return;
-
     const prefixes = ["廃墟の", "誰もいない", "記憶の", "電子の", "虚無の", "歪んだ", "灰色の", "沈黙する"];
     const suffixes = ["路地裏", "観測点", "信号機", "ビル群", "境界線", "掃き溜め", "公園跡", "地下道"];
     const randomName = prefixes[Math.floor(Math.random() * prefixes.length)] + 
                        suffixes[Math.floor(Math.random() * suffixes.length)];
 
-    // ★教祖様の断片的なセリフ集（ここにお好きな言葉をどんどん追加してください！）
     const soulFragments = [
         "「空が、あんなに低かったっけ……？」",
         "「誰のログインパスワードも、もう意味をなさない」",
@@ -240,37 +226,33 @@ function generateInfiniteMap(mapId) {
         events: []
     };
 
-    // 40%の確率で「断片的なセリフ」を持つ影や遺物を配置
-    if (Math.random() < 0.4) {
+    // セリフを持つ影
+    if (Math.random() < 0.3) {
         MAPS[mapId].events.push({
-            id: 'fragment_' + Date.now(),
-            x: Math.floor(Math.random() * 13),
-            y: Math.floor(Math.random() * 12),
-            char: Math.random() > 0.5 ? '👤' : '💾', 
+            id: 'frag_' + Date.now(),
+            x: Math.floor(Math.random() * 13), y: Math.floor(Math.random() * 12),
+            char: '👤', 
             msg: [soulFragments[Math.floor(Math.random() * soulFragments.length)]]
         });
     }
 
-    // 50%の確率で折り紙を配置（100枚への道！）
-    if (Math.random() < 0.5) {
+    // 折り紙
+    if (Math.random() < 0.6) {
         MAPS[mapId].events.push({
-            id: 'gen_origami_' + Date.now(),
-            x: Math.floor(Math.random() * 13),
-            y: Math.floor(Math.random() * 12),
-            type: 'origami',
-            char: '✨',
+            id: 'gen_o_' + Date.now(),
+            x: Math.floor(Math.random() * 13), y: Math.floor(Math.random() * 12),
+            type: 'origami', char: '✨',
             msg: "世界のノイズの中から、祈りの結晶を拾い上げた。"
         });
     }
 }
+
 function checkScare() {
     state.steps++;
     if (state.steps > 30 && Math.random() < 0.1 && !state.isGlitching) {
         state.isGlitching = true;
         const screen = document.getElementById('game-screen');
-        const se = document.getElementById('se-glitch');
         if(screen) screen.classList.add('glitch-active');
-        if(se) se.play().catch(()=>{});
         setTimeout(() => {
             if(screen) screen.classList.remove('glitch-active');
             state.isGlitching = false;
