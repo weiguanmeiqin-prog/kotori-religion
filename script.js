@@ -206,7 +206,63 @@ function typeWriter(text) {
         }
     }, 30);
 }
+// --- 【魂を刻んだ無限生成エンジン】 ---
+function generateInfiniteMap(mapId) {
+    if (MAPS[mapId]) return;
 
+    const prefixes = ["廃墟の", "誰もいない", "記憶の", "電子の", "虚無の", "歪んだ", "灰色の", "沈黙する"];
+    const suffixes = ["路地裏", "観測点", "信号機", "ビル群", "境界線", "掃き溜め", "公園跡", "地下道"];
+    const randomName = prefixes[Math.floor(Math.random() * prefixes.length)] + 
+                       suffixes[Math.floor(Math.random() * suffixes.length)];
+
+    // ★教祖様の断片的なセリフ集（ここにお好きな言葉をどんどん追加してください！）
+    const soulFragments = [
+        "「空が、あんなに低かったっけ……？」",
+        "「誰のログインパスワードも、もう意味をなさない」",
+        "「🐥の羽が、一枚、アスファルトに溶けていった」",
+        "「整合性は死んだ。ノイズだけが正しい」",
+        "「昨日会った影は、今日はもう砂になっていた」",
+        "「13時62分。終わらないティータイムの始まり」",
+        "「履歴書を燃やして、その灰で折り紙を折ろう」",
+        "「君が🐥なら、僕はただのバグでいい」",
+        "「このノイズの向こう側に、誰かいるの？」"
+    ];
+
+    MAPS[mapId] = {
+        name: randomName,
+        exits: {
+            up:    { map: mapId + "_u", x: 6, y: 11 },
+            down:  { map: mapId + "_d", x: 6, y: 0 },
+            left:  { map: mapId + "_l", x: 12, y: 5 },
+            right: { map: mapId + "_r", x: 0, y: 5 }
+        },
+        layout: Array(12).fill(null).map(() => Array(13).fill(0)),
+        events: []
+    };
+
+    // 40%の確率で「断片的なセリフ」を持つ影や遺物を配置
+    if (Math.random() < 0.4) {
+        MAPS[mapId].events.push({
+            id: 'fragment_' + Date.now(),
+            x: Math.floor(Math.random() * 13),
+            y: Math.floor(Math.random() * 12),
+            char: Math.random() > 0.5 ? '👤' : '💾', 
+            msg: [soulFragments[Math.floor(Math.random() * soulFragments.length)]]
+        });
+    }
+
+    // 50%の確率で折り紙を配置（100枚への道！）
+    if (Math.random() < 0.5) {
+        MAPS[mapId].events.push({
+            id: 'gen_origami_' + Date.now(),
+            x: Math.floor(Math.random() * 13),
+            y: Math.floor(Math.random() * 12),
+            type: 'origami',
+            char: '✨',
+            msg: "世界のノイズの中から、祈りの結晶を拾い上げた。"
+        });
+    }
+}
 function checkScare() {
     state.steps++;
     if (state.steps > 30 && Math.random() < 0.1 && !state.isGlitching) {
