@@ -11,7 +11,16 @@
         <div id="map-name">---</div>
         <div id="count-display">ORIGAMI: 0/100</div>
     </div>
+<div id="touch-panel">
+    <div class="touch-btn" style="grid-area: up;" onclick="handleInput({key:'ArrowUp'})">▲</div>
+    <div class="touch-btn" style="grid-area: left;" onclick="handleInput({key:'ArrowLeft'})">◀</div>
+    <div class="touch-btn" style="grid-area: right;" onclick="handleInput({key:'ArrowRight'})">▶</div>
+    <div class="touch-btn" style="grid-area: down;" onclick="handleInput({key:'ArrowDown'})">▼</div>
+</div>
 
+<audio id="bgm-wind" loop src="https://www.soundjay.com/nature/sounds/wind-01.mp3"></audio>
+<audio id="se-pickup" src="https://www.soundjay.com/buttons/sounds/button-09.mp3"></audio>
+<audio id="se-glitch" src="https://www.soundjay.com/mechanical/sounds/tv-static-01.mp3"></audio>
     <div id="game-container">
         <div id="game-screen"></div>
         <div id="dialogue-box">
