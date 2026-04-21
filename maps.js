@@ -26,3 +26,15 @@ const MAPS = {
     }
     // ※エリアは同様の形式で増やせます！
 };
+const MAPS = {
+    // ...既存のマップ...
+
+    "infinite_labyrinth": {
+        name: "ノイズの狭間（無限廃墟）",
+        layout: [], // ここは実行時に自動生成される
+        exits: { 
+            up: { map: "shibuya_station_hall", x: 6, y: 10 } // 戻り道だけ用意
+        },
+        events: []
+    }
+};
