@@ -125,6 +125,29 @@ function enterInfiniteLabyrinth() {
     }
 }
 
+// エリア移動の処理（移動先で埋まらないように調整）
+function moveArea(exitData) {
+    state.currentMap = exitData.map;
+    
+    if (state.currentMap === "infinite_labyrinth") {
+        enterInfiniteLabyrinth();
+    }
+    
+    // 移動先の座標をセット
+    state.x = exitData.x;
+    state.y = exitData.y;
+
+    // --- 【重要】もし移動先が壁(1)だったら、空き地(0)を探して強制移動 ---
+    const map = MAPS[state.currentMap];
+    if (map.layout && map.layout[state.y] && map.layout[state.y][state.x] === 1) {
+        state.x = 6; // マップ中央の安全圏へ
+        state.y = 5;
+    }
+
+    renderMap(); // 移動直後に必ず再描画！
+}
+
+// renderMapをさらに強化（絶対に🐥を出す！）
 function renderMap() {
     const map = MAPS[state.currentMap];
     const screen = document.getElementById('game-screen');
@@ -134,7 +157,7 @@ function renderMap() {
     document.getElementById('count-display').textContent = `ORIGAMI: ${state.origamiCount}/100`;
     screen.innerHTML = ''; 
 
-    // 1. イベント配置
+    // 1. イベント（✨など）
     if (map.events) {
         map.events.forEach(ev => {
             if (!state.history.includes(ev.id)) {
@@ -148,7 +171,7 @@ function renderMap() {
         });
     }
 
-    // 2. 瓦礫(壁)配置
+    // 2. 瓦礫（🧱）
     if (map.layout) {
         map.layout.forEach((row, y) => {
             row.forEach((cell, x) => {
@@ -158,14 +181,14 @@ function renderMap() {
                     wall.style.left = (x * 32) + 'px';
                     wall.style.top = (y * 32) + 'px';
                     wall.textContent = '🧱';
-                    wall.style.opacity = "0.3";
+                    wall.style.opacity = "0.2";
                     screen.appendChild(wall);
                 }
             });
         });
     }
 
-    // 3. 小鳥(🐥)配置
+    // 3. 🐥（教祖様）を最前面に召喚
     const p = document.createElement('div');
     p.id = 'player';
     p.textContent = '🐥';
@@ -177,7 +200,7 @@ function renderMap() {
     p.style.display = 'flex';
     p.style.justifyContent = 'center';
     p.style.alignItems = 'center';
-    p.style.zIndex = "999";
+    p.style.zIndex = "9999"; // 絶対に一番上！
     screen.appendChild(p);
 }
 
