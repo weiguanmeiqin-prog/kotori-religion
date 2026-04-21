@@ -7,44 +7,46 @@ function checkEvents(map) {
     const ev = map.events.find(ev => ev.x === state.x && ev.y === state.y);
     if (!ev) return;
 
-    // 初めて調べる場合はカウントを0で初期化
+    // 1. 調べた回数をカウント
     if (!state.eventCounts[ev.id]) state.eventCounts[ev.id] = 0;
-    
-    // カウントアップ
     state.eventCounts[ev.id]++;
     const count = state.eventCounts[ev.id];
 
-    // ✨（折り紙）の場合は今まで通り1回きり
+    // 2. ✨ 折り紙（1回きり）の処理
     if (ev.type === 'origami') {
         if (!state.history.includes(ev.id)) {
             state.origamiCount++;
             state.history.push(ev.id);
             const se = document.getElementById('se-pickup');
             if(se) se.play().catch(()=>{});
-            typeWriter(ev.msg + (MONOLOGUES[state.origamiCount] ? "\n\n" + MONOLOGUES[state.origamiCount] : ""));
+            
+            // 独白を合成
+            let msg = ev.msg;
+            if (MONOLOGUES[state.origamiCount]) {
+                msg += "\n\n" + MONOLOGUES[state.origamiCount];
+            }
+            typeWriter(msg);
         }
         return;
     }
 
-    // 一般イベント（NPCや看板など）は回数に応じてメッセージ変化！
+    // 3. 一般イベント（NPCや看板など）のメッセージ抽選
     let displayMsg = "";
     if (Array.isArray(ev.msg)) {
-        // メッセージが配列なら、回数に応じて進む（最後はループ）
         const index = Math.min(count - 1, ev.msg.length - 1);
         displayMsg = ev.msg[index];
     } else {
         displayMsg = ev.msg;
     }
 
-    // 特定回数でSEを鳴らすなどの演出も可
-    if (count >= 3 && ev.specialSe) {
-        const se = document.getElementById(ev.specialSe);
-        if(se) se.play().catch(()=>{});
-    }
+    // 4. 特殊演出（時計や階段など）の呼び出し
+    applyWeirdEffect(ev.id, count);
 
+    // 5. メッセージ表示
     typeWriter(displayMsg);
 }
 
+  
 const MONOLOGUES = {
     // 【Phase 1: 執着】
     1: "「1枚。指が、折り方を思い出していく。正しい儀式が必要だ。」",
@@ -275,12 +277,7 @@ function handleInput(e) {
     renderMap();
 }
 
-function moveArea(exitData) {
-    state.currentMap = exitData.map;
-    if (state.currentMap === "infinite_labyrinth") enterInfiniteLabyrinth();
-    state.x = exitData.x;
-    state.y = exitData.y;
-}
+
 
 function checkEvents(map) {
     const ev = map.events.find(ev => ev.x === state.x && ev.y === state.y);
