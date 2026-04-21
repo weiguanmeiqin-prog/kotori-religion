@@ -96,60 +96,50 @@ function applyWeirdEffect(evId, count) {
         setTimeout(() => p.style.animation = "none", 2000);
     }
 }
-
-// 3. 描画と移動
 function renderMap() {
-    const map = MAPS[state.currentMap];
     const screen = document.getElementById('game-screen');
-    if (!screen || !map) return;
-
-    document.getElementById('map-name').textContent = map.name;
-    document.getElementById('count-display').textContent = `ORIGAMI: ${state.origamiCount}/100`;
-    screen.innerHTML = ''; 
-
-    // イベント・瓦礫の描画
-    if (map.events) {
-        map.events.forEach(ev => {
-            if (!state.history.includes(ev.id)) {
-                const div = document.createElement('div');
-                div.className = 'cell';
-                div.style.left = (ev.x * 32) + 'px';
-                div.style.top = (ev.y * 32) + 'px';
-                div.textContent = ev.char;
-                screen.appendChild(div);
-            }
-        });
-    }
-    if (map.layout) {
-        map.layout.forEach((row, y) => {
-            row.forEach((cell, x) => {
-                if (cell === 1) {
-                    const wall = document.createElement('div');
-                    wall.className = 'cell';
-                    wall.style.left = (x * 32) + 'px';
-                    wall.style.top = (y * 32) + 'px';
-                    wall.textContent = '🧱';
-                    wall.style.opacity = "0.2";
-                    screen.appendChild(wall);
-                }
+    screen.innerHTML = '';
+    const mapData = MAPS[currentMap];
+    
+    // --- 【追加】折り紙のランダム復活ロジック ---
+    // エリアに入った時、30%の確率で新しい折り紙がどこかに現れる
+    if (Math.random() < 0.3) { 
+        const randomX = Math.floor(Math.random() * 13);
+        const randomY = Math.floor(Math.random() * 12);
+        
+        // すでにイベントがある場所には作らない
+        const exists = mapData.events.find(e => e.x === randomX && e.y === randomY);
+        if (!exists) {
+            mapData.events.push({
+                id: 'gen_' + Date.now(), // 重複しないID
+                x: randomX,
+                y: randomY,
+                type: 'origami',
+                char: '✨',
+                msg: "ノイズの隙間に、新たな折り紙が結実していた。"
             });
-        });
+        }
     }
+    // ---------------------------------------
 
-    // 🐥の描画
-    const p = document.createElement('div');
-    p.id = 'player';
-    p.textContent = '🐥';
-    p.style.position = 'absolute';
-    p.style.left = (state.x * 32) + 'px';
-    p.style.top = (state.y * 32) + 'px';
-    p.style.width = '32px';
-    p.style.height = '32px';
-    p.style.display = 'flex';
-    p.style.justifyContent = 'center';
-    p.style.alignItems = 'center';
-    p.style.zIndex = "9999";
-    screen.appendChild(p);
+    // 以下、元々の描画処理 ...
+    mapData.events.forEach(event => {
+        const div = document.createElement('div');
+        div.className = 'cell';
+        div.style.left = (event.x * 32) + 'px';
+        div.style.top = (event.y * 32) + 'px';
+        div.textContent = event.char;
+        screen.appendChild(div);
+    });
+    
+    // 🐥を表示
+    const playerDiv = document.createElement('div');
+    playerDiv.id = 'player';
+    playerDiv.textContent = '🐥';
+    updatePlayerPosition(playerDiv);
+    screen.appendChild(playerDiv);
+    
+    document.getElementById('map-name').textContent = mapData.name;
 }
 
 function moveArea(exitData) {
