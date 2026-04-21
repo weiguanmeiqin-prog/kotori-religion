@@ -54,20 +54,61 @@ function enterInfiniteLabyrinth() {
 function renderMap() {
     const map = MAPS[state.currentMap];
     const screen = document.getElementById('game-screen');
+    if (!screen) return;
+
+    // UIの更新
     document.getElementById('map-name').textContent = map.name;
     document.getElementById('count-display').textContent = `ORIGAMI: ${state.origamiCount}/100`;
+    
+    // 一旦画面を真っさらにお掃除
     screen.innerHTML = ''; 
 
-    map.events.forEach(ev => {
-        if (!state.history.includes(ev.id)) {
-            const div = document.createElement('div');
-            div.className = 'cell';
-            div.style.left = (ev.x * 32) + 'px';
-            div.style.top = (ev.y * 32) + 'px';
-            div.textContent = ev.char;
-            screen.appendChild(div);
-        }
-    });
+    // 1. オブジェクト（✨や🗑️）を配置
+    if (map.events) {
+        map.events.forEach(ev => {
+            if (!state.history.includes(ev.id)) {
+                const div = document.createElement('div');
+                div.className = 'cell';
+                div.style.left = (ev.x * 32) + 'px';
+                div.style.top = (ev.y * 32) + 'px';
+                div.textContent = ev.char;
+                screen.appendChild(div);
+            }
+        });
+    }
+
+    // 2. 瓦礫（壁）を可視化（これで見えない壁問題が解決！）
+    if (map.layout) {
+        map.layout.forEach((row, y) => {
+            row.forEach((cell, x) => {
+                if (cell === 1) {
+                    const wall = document.createElement('div');
+                    wall.className = 'cell';
+                    wall.style.left = (x * 32) + 'px';
+                    wall.style.top = (y * 32) + 'px';
+                    wall.textContent = '🧱'; // 瓦礫を🧱で表示してスリルアップ！
+                    wall.style.opacity = "0.3"; // 邪魔にならない程度に透かす
+                    screen.appendChild(wall);
+                }
+            });
+        });
+    }
+
+    // 3. 🐥（教祖様）を配置！
+    const p = document.createElement('div');
+    p.id = 'player';
+    p.textContent = '🐥';
+    p.style.position = 'absolute';
+    p.style.width = '32px';
+    p.style.height = '32px';
+    p.style.left = (state.x * 32) + 'px';
+    p.style.top = (state.y * 32) + 'px';
+    p.style.display = 'flex';
+    p.style.justifyContent = 'center';
+    p.style.alignItems = 'center';
+    p.style.zIndex = "999"; // 誰よりも上に！
+    screen.appendChild(p);
+}
 
     const p = document.createElement('div');
     p.id = 'player';
