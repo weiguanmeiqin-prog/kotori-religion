@@ -178,3 +178,43 @@ function checkEvents(map) {
         typeWriter(msg);
     }
 }
+// テキストをカタカタ表示する関数（これがないとメッセージが出ません）
+function typeWriter(text) {
+    state.isTyping = true;
+    const dialog = document.getElementById('dialogue-text');
+    dialog.textContent = "";
+    
+    // 10枚ごとに色を変える遊び心
+    const isSpecial = state.origamiCount > 0 && state.origamiCount % 10 === 0;
+    dialog.style.color = isSpecial ? "gold" : "white";
+    
+    let i = 0;
+    const timer = setInterval(() => {
+        dialog.textContent += text[i];
+        i++;
+        if (i >= text.length) {
+            clearInterval(timer);
+            state.isTyping = false;
+            
+            // 100枚達成時のエンディング演出
+            if (state.origamiCount >= 100) {
+                handleGameEnd();
+            }
+        }
+    }, 30);
+}
+
+// エンディング演出
+function handleGameEnd() {
+    document.body.style.transition = "background-color 4s";
+    document.body.style.backgroundColor = "white";
+    setTimeout(() => {
+        alert("CHAPTER 1 修復完了。\n教祖様、光の向こう側でお待ちしています。");
+    }, 4000);
+}
+
+// ページ読み込み時に実行
+window.onload = () => {
+    renderMap();
+    window.addEventListener('keydown', handleInput);
+};
