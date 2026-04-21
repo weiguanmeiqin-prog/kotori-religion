@@ -1,3 +1,4 @@
+// --- 状態管理 ---
 const state = {
     x: 6,
     y: 5,
@@ -33,34 +34,7 @@ const MONOLOGUES = {
     100: "「100枚。……千羽鶴が完成した。 CHAPTER 1 END（静かなノイズ）」"
 };
 
-const state = {
-    x: 6,
-    y: 5,
-    currentMap: "shibuya_station",
-    origamiCount: 0,
-    isTyping: false,
-    history: [],
-    steps: 0,
-    isGlitching: false,
-    eventCounts: {}, 
-};
-
-// --- 【移動処理：ここが重要！】 ---
-function moveArea(exitData) {
-    if (!exitData || !exitData.map) return;
-
-    // もし行き先のマップがまだ存在しないなら、無限生成する！
-    if (!MAPS[exitData.map]) {
-        generateInfiniteMap(exitData.map);
-    }
-
-    state.currentMap = exitData.map;
-    state.x = exitData.x ?? 6;
-    state.y = exitData.y ?? 5;
-
-    renderMap();
-}
-
+// --- 2. イベント処理（心臓部） ---
 function checkEvents(map) {
     const ev = map.events.find(ev => ev.x === state.x && ev.y === state.y);
     if (!ev) return;
@@ -81,6 +55,10 @@ function checkEvents(map) {
                 msg += "\n\n" + MONOLOGUES[state.origamiCount];
             }
             typeWriter(msg);
+            
+            // 折り紙の枚数表示を更新
+            const countEl = document.getElementById('origami-count');
+            if (countEl) countEl.textContent = state.origamiCount;
         }
         return;
     }
@@ -107,14 +85,17 @@ function applyWeirdEffect(evId, count) {
     }
 }
 
+// --- 3. 描画処理 ---
 function renderMap() {
     const screen = document.getElementById('game-screen');
     if (!screen) return;
     screen.innerHTML = '';
-    const mapData = MAPS[state.currentMap];
     
-    // エリア移動時にランダムで新しい折り紙を1つだけ生成（低確率）
-    if (Math.random() < 0.2) { 
+    const mapData = MAPS[state.currentMap];
+    if (!mapData) return;
+    
+    // 【復活ロジック】エリア侵入時にランダム生成
+    if (Math.random() < 0.5) { 
         const randomX = Math.floor(Math.random() * 13);
         const randomY = Math.floor(Math.random() * 12);
         const exists = mapData.events.find(e => e.x === randomX && e.y === randomY);
@@ -139,13 +120,29 @@ function renderMap() {
     
     const playerDiv = document.createElement('div');
     playerDiv.id = 'player';
-    playerDiv.textContent = '🐥';
     playerDiv.style.left = (state.x * 32) + 'px';
     playerDiv.style.top = (state.y * 32) + 'px';
+    playerDiv.textContent = '🐥';
     screen.appendChild(playerDiv);
     
-    document.getElementById('map-name').textContent = mapData.name;
-    document.getElementById('origami-count').textContent = state.origamiCount;
+    const nameEl = document.getElementById('map-name');
+    if (nameEl) nameEl.textContent = mapData.name;
+}
+
+// --- 4. 移動処理（ここを修正しました） ---
+function moveArea(exitData) {
+    if (!exitData || !exitData.map) return;
+
+    // 行き先のマップがなければ生成
+    if (!MAPS[exitData.map]) {
+        generateInfiniteMap(exitData.map);
+    }
+
+    state.currentMap = exitData.map;
+    state.x = exitData.x ?? 6;
+    state.y = exitData.y ?? 5;
+
+    renderMap();
 }
 
 function handleInput(e) {
@@ -161,13 +158,11 @@ function handleInput(e) {
     if (e.key === "ArrowLeft") nextX--;
     if (e.key === "ArrowRight") nextX++;
 
-    // 画面外に出た時の移動処理
     if (nextX >= 13) { moveArea(map.exits?.right); return; }
     if (nextX < 0) { moveArea(map.exits?.left); return; }
     if (nextY >= 12) { moveArea(map.exits?.down); return; }
     if (nextY < 0) { moveArea(map.exits?.up); return; }
 
-    // 移動可能かチェック（0なら歩ける）
     if (map.layout && map.layout[nextY] && map.layout[nextY][nextX] === 0) {
         state.x = nextX;
         state.y = nextY;
@@ -183,6 +178,10 @@ function typeWriter(text) {
     if(!dialog) return;
     dialog.textContent = "";
     
+    // こだわりの特別な色演出
+    const isSpecial = state.origamiCount > 0 && state.origamiCount % 10 === 0;
+    dialog.style.color = isSpecial ? "gold" : "white";
+    
     let i = 0;
     const timer = setInterval(() => {
         dialog.textContent += text[i];
@@ -195,8 +194,10 @@ function typeWriter(text) {
     }, 30);
 }
 
+// --- 【魂を刻んだ無限生成エンジン】 ---
 function generateInfiniteMap(mapId) {
     if (MAPS[mapId]) return;
+
     const prefixes = ["廃墟の", "誰もいない", "記憶の", "電子の", "虚無の", "歪んだ", "灰色の", "沈黙する"];
     const suffixes = ["路地裏", "観測点", "信号機", "ビル群", "境界線", "掃き溜め", "公園跡", "地下道"];
     const randomName = prefixes[Math.floor(Math.random() * prefixes.length)] + 
@@ -226,20 +227,18 @@ function generateInfiniteMap(mapId) {
         events: []
     };
 
-    // セリフを持つ影
-    if (Math.random() < 0.3) {
+    if (Math.random() < 0.4) {
         MAPS[mapId].events.push({
-            id: 'frag_' + Date.now(),
+            id: 'fragment_' + Date.now(),
             x: Math.floor(Math.random() * 13), y: Math.floor(Math.random() * 12),
-            char: '👤', 
+            char: Math.random() > 0.5 ? '👤' : '💾', 
             msg: [soulFragments[Math.floor(Math.random() * soulFragments.length)]]
         });
     }
 
-    // 折り紙
-    if (Math.random() < 0.6) {
+    if (Math.random() < 0.5) {
         MAPS[mapId].events.push({
-            id: 'gen_o_' + Date.now(),
+            id: 'gen_origami_' + Date.now(),
             x: Math.floor(Math.random() * 13), y: Math.floor(Math.random() * 12),
             type: 'origami', char: '✨',
             msg: "世界のノイズの中から、祈りの結晶を拾い上げた。"
@@ -253,6 +252,7 @@ function checkScare() {
         state.isGlitching = true;
         const screen = document.getElementById('game-screen');
         if(screen) screen.classList.add('glitch-active');
+        
         setTimeout(() => {
             if(screen) screen.classList.remove('glitch-active');
             state.isGlitching = false;
