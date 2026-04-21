@@ -104,49 +104,77 @@ function checkScare() {
     }
 }
 
-// --- エリア移動判定（全方向対応） ---
-const mapWidth = 13; 
-const mapHeight = 12;
+function handleInput(e) {
+    if (state.isTyping) return;
+    
+    // BGM開始（初回操作時のみ）
+    const bgm = document.getElementById('bgm-wind');
+    if (bgm && bgm.paused) bgm.play();
 
-// 右へ移動
-if (nextX >= mapWidth && map.exits.right) {
-    const ex = map.exits.right;
-    state.currentMap = ex.map;
+    let nextX = state.x; 
+    let nextY = state.y;
+    const map = MAPS[state.currentMap];
+
+    // キー判定
+    if (e.key === "ArrowUp") nextY--;
+    if (e.key === "ArrowDown") nextY++;
+    if (e.key === "ArrowLeft") nextX--;
+    if (e.key === "ArrowRight") nextX++;
+
+    const mapWidth = 13; 
+    const mapHeight = 12;
+
+    // --- エリア移動判定（全方向対応） ---
+    if (nextX >= mapWidth && map.exits.right) {
+        moveArea(map.exits.right);
+    } else if (nextX < 0 && map.exits.left) {
+        moveArea(map.exits.left);
+    } else if (nextY >= mapHeight && map.exits.down) {
+        moveArea(map.exits.down);
+    } else if (nextY < 0 && map.exits.up) {
+        moveArea(map.exits.up);
+    } 
+    // --- 通常の移動判定 ---
+    else if (nextX >= 0 && nextX < mapWidth && nextY >= 0 && nextY < mapHeight) {
+        // 壁（1）がなければ進める
+        if (map.layout[nextY] && map.layout[nextY][nextX] === 0) {
+            state.x = nextX;
+            state.y = nextY;
+            
+            checkEvents(map); // ✨の取得チェック
+            checkScare();    // スリル演出チェック
+        }
+    }
+    renderMap();
+}
+
+// エリア移動の共通処理
+function moveArea(exitData) {
+    state.currentMap = exitData.map;
     // 迷宮に入るなら生成
-    if (state.currentMap === "infinite_labyrinth") enterInfiniteLabyrinth();
-    state.x = ex.x; state.y = ex.y;
-} 
-// 左へ移動
-else if (nextX < 0 && map.exits.left) {
-    const ex = map.exits.left;
-    state.currentMap = ex.map;
-    if (state.currentMap === "infinite_labyrinth") enterInfiniteLabyrinth();
-    state.x = ex.x; state.y = ex.y;
-} 
-// 下へ移動
-else if (nextY >= mapHeight && map.exits.down) {
-    const ex = map.exits.down;
-    state.currentMap = ex.map;
-    if (state.currentMap === "infinite_labyrinth") enterInfiniteLabyrinth();
-    state.x = ex.x; state.y = ex.y;
-} 
-// 上へ移動
-else if (nextY < 0 && map.exits.up) {
-    const ex = map.exits.up;
-    state.currentMap = ex.map;
-    if (state.currentMap === "infinite_labyrinth") enterInfiniteLabyrinth();
-    state.x = ex.x; state.y = ex.y;
-} 
-// --- 通常の移動判定 ---
-else if (nextX >= 0 && nextX < mapWidth && nextY >= 0 && nextY < mapHeight) {
-    // 壁の判定（自動生成された 1 は通れない）
-    if (map.layout[nextY][nextX] === 0) {
-        state.x = nextX;
-        state.y = nextY;
+    if (state.currentMap === "infinite_labyrinth") {
+        enterInfiniteLabyrinth();
+    }
+    state.x = exitData.x;
+    state.y = exitData.y;
+}
+
+// ✨などのイベントを処理する関数
+function checkEvents(map) {
+    const ev = map.events.find(ev => ev.x === state.x && ev.y === state.y);
+    if (ev && !state.history.includes(ev.id)) {
+        if (ev.type === 'origami') {
+            state.origamiCount++;
+            const se = document.getElementById('se-pickup');
+            if(se) se.play();
+        }
         
-        // 移動後のイベントチェック（✨の取得など）
-        checkEvents(map);
-        // スリル演出のチェック
-        checkScare();
+        state.history.push(ev.id);
+        
+        let msg = ev.msg;
+        if (MONOLOGUES[state.origamiCount]) {
+            msg += "\n\n" + MONOLOGUES[state.origamiCount];
+        }
+        typeWriter(msg);
     }
 }
