@@ -267,3 +267,23 @@ window.onload = () => {
     renderMap();
     window.addEventListener('keydown', handleInput);
 };
+// checkEvents内に追加（メタ発言なし、純粋な怪奇現象）
+function applyWeirdEffect(evId, count) {
+    const screen = document.getElementById('game-screen');
+    const p = document.getElementById('player');
+
+    // 「逆回転時計」を調べすぎると時間が狂う
+    if (evId === 'broken_clock' && count === 4) {
+        screen.style.filter = "sepia(1) hue-rotate(180deg)"; // 画面が腐食したような色に
+        setTimeout(() => { screen.style.filter = "none"; }, 3000);
+    }
+
+    // 「階段」を調べすぎると🐥が震え出す
+    if (evId === 'infinite_stairs' && count === 3) {
+        p.style.animation = "glitch-anim 0.1s infinite";
+        setTimeout(() => { p.style.animation = "none"; }, 2000);
+    }
+}
+
+// これを checkEvents(map) の最後の方で呼び出す
+// applyWeirdEffect(ev.id, count);
