@@ -103,7 +103,7 @@ function renderMap() {
     
     // --- 【追加】折り紙のランダム復活ロジック ---
     // エリアに入った時、30%の確率で新しい折り紙がどこかに現れる
-    if (Math.random() < 0.3) { 
+    if (Math.random() < 0.5) { 
         const randomX = Math.floor(Math.random() * 13);
         const randomY = Math.floor(Math.random() * 12);
         
