@@ -57,3 +57,46 @@ const MAPS = {
         events: []
     }
 };
+const MAPS = {
+    "shibuya_station": {
+        name: "渋谷駅前広場",
+        exits: { right: "shibuya_backstreet", down: "shibuya_crossroad" }, // 簡易記述例
+        layout: Array(12).fill(null).map(() => Array(13).fill(0)),
+        events: [
+            { 
+                id: 'npc_shadow', x: 3, y: 7, char: '👥', 
+                msg: [
+                    "影が立っている。スマホを覗き込んでいるようだ。",
+                    "「……あ、電波入った？」\n彼は100年前の通信障害をまだ気にしている。",
+                    "「再起動してもダメか……」\n彼のスマホは、ただの黒い石板にしか見えない。",
+                    "彼はもう、こちらを見ていない。指だけが虚空をスワイプし続けている。"
+                ]
+            },
+            {
+                id: 'station_radio', x: 1, y: 3, char: '📻',
+                msg: [
+                    "古いラジオ。ノイズが混じっている。",
+                    "……ｶﾞｶﾞ……本日……渋谷駅前は……静穏……ﾃﾞｽ……",
+                    "……聞こえて……ますか……？……逃げ……て……",
+                    "（ただの不快な高周波だけが流れている）"
+                ],
+                specialSe: 'se-glitch' // 3回目以降でノイズを鳴らす
+            }
+        ]
+    },
+    "shibuya_backstreet": {
+        name: "渋谷裏路地",
+        layout: Array(12).fill(null).map(() => Array(13).fill(0)),
+        events: [
+            {
+                id: 'sns_ghost', x: 8, y: 2, char: '📱',
+                msg: [
+                    "[通知] 100年前の今日の思い出があります。",
+                    "画面が割れているが、通知が見える。\n『@shibuya_love: 誰もいないんだけどｗｗｗ』",
+                    "連投されている。\n『@shibuya_love: ねえ誰か返信して』",
+                    "最後の投稿：\n『すごく……きれいな鳥が、こっちを見てる』"
+                ]
+            }
+        ]
+    }
+};
