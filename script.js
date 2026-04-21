@@ -125,26 +125,41 @@ function enterInfiniteLabyrinth() {
     }
 }
 
-// エリア移動の処理（移動先で埋まらないように調整）
-function moveArea(exitData) {
-    state.currentMap = exitData.map;
-    
-    if (state.currentMap === "infinite_labyrinth") {
-        enterInfiniteLabyrinth();
-    }
-    
-    // 移動先の座標をセット
-    state.x = exitData.x;
-    state.y = exitData.y;
 
-    // --- 【重要】もし移動先が壁(1)だったら、空き地(0)を探して強制移動 ---
-    const map = MAPS[state.currentMap];
-    if (map.layout && map.layout[state.y] && map.layout[state.y][state.x] === 1) {
-        state.x = 6; // マップ中央の安全圏へ
+// エリア移動の共通処理（安全装置付き）
+function moveArea(exitData) {
+    // もしexitDataが名前（文字列）だけだった場合のケア
+    if (typeof exitData === 'string') {
+        const targetMapName = exitData;
+        state.currentMap = targetMapName;
+        state.x = 6; // 安全な中央位置
+        state.y = 5;
+    } else if (exitData && exitData.map) {
+        // 通常のオブジェクト形式の場合
+        state.currentMap = exitData.map;
+        state.x = (exitData.x !== undefined) ? exitData.x : 6;
+        state.y = (exitData.y !== undefined) ? exitData.y : 5;
+    } else {
+        // 万が一データが壊れていたら渋谷駅前に強制送還
+        console.error("エリアデータが壊れています。渋谷に送還します。");
+        state.currentMap = "shibuya_station";
+        state.x = 6;
         state.y = 5;
     }
 
-    renderMap(); // 移動直後に必ず再描画！
+    // 迷宮生成のトリガー
+    if (state.currentMap === "infinite_labyrinth") {
+        enterInfiniteLabyrinth();
+    }
+
+    // 移動先の壁判定（埋まり防止）
+    const map = MAPS[state.currentMap];
+    if (map && map.layout && map.layout[state.y] && map.layout[state.y][state.x] === 1) {
+        state.x = 6; 
+        state.y = 5;
+    }
+
+    renderMap();
 }
 
 // renderMapをさらに強化（絶対に🐥を出す！）
