@@ -5,7 +5,7 @@ const MAPS = {
             right: { map: "shibuya_backstreet", x: 0, y: 5 },
             down: { map: "shibuya_crossroad", x: 6, y: 0 },
             up: { map: "shibuya_109", x: 6, y: 11 },
-            left: { map: "akihabara_graveyard", x: 12, y: 5 } // 秋葉原へ繋げました
+            left: { map: "akihabara_graveyard", x: 12, y: 5 } 
         },
         layout: Array(12).fill(null).map(() => Array(13).fill(0)),
         events: [
@@ -78,7 +78,7 @@ const MAPS = {
     "akihabara_graveyard": {
         name: "秋葉原：電脳の墓場",
         exits: { 
-            right: { map: "shibuya_station", x: 0, y: 5 } // 渋谷に戻れるようにしました
+            right: { map: "shibuya_station", x: 0, y: 5 }
         },
         layout: Array(12).fill(null).map(() => Array(13).fill(0)),
         events: [
@@ -90,20 +90,22 @@ const MAPS = {
         name: "池袋：履歴書の降る街",
         exits: { 
             up: { map: "ikebukuro_line", x: 6, y: 11 },
-            down: { map: "infinite_labyrinth", x: 6, y: 0 } // 池袋からも迷宮へ繋げました
+            down: { map: "infinite_labyrinth", x: 6, y: 0 } 
         },
         layout: Array(12).fill(null).map(() => Array(13).fill(0)),
         events: [
             { id: 'falling_paper', x: 3, y: 4, char: '📄', msg: ["空から紙が降ってきた。……誰かの履歴書だ。写真は剥がされている。", "別の紙を拾った。特技の欄に『呼吸を止めること』と書かれている。", "さらに別の紙には、血の跡で大きく『不採用』とだけ書かれていた。", "（見上げると、ビルの屋上から膨大な量の紙が雪のように溢れ出している）"] },
-            { id: 'owl_statue', x: 6, y: 10, char: '🦉', msg: ["池袋の象徴、フクロウの像だ。なぜか首が180度回っている。", "像の足元には、本物のフクロウの羽が山積みにされている。", "「ホー、ホー」と鳴いた。……像の口から、生々しい呼吸音がする。", "（あなたが目を離すたびに、像の位置が1マスずつ近づいている気がする）"] }
+            { id: 'owl_statue', x: 6, y: 10, char: '🦉', msg: ["池袋の象徴、フクロウの像だ。なぜか首が180度回っている。", "像の足元には、本物のフクロウの羽が山積みにされている。", "「ホー、ホー」と鳴いた。", "（あなたが目を離すたびに、像の位置が1マスずつ近づいている気がする）"] }
         ]
     },
     "infinite_labyrinth": {
         name: "ノイズの狭間（無限廃墟）",
         exits: { 
-            up: { map: "shibuya_station", x: 6, y: 11 } // 迷宮から渋谷へ脱出
+            up: { map: "shibuya_station", x: 6, y: 11 } 
         },
-        layout: Array(12).fill(null).map(() => Array(13).fill(0)), // layoutを修正
-        events: []
+        layout: Array(12).fill(null).map(() => Array(13).fill(0)),
+        events: [
+            { id: 'glitch_foot', x: 6, y: 5, char: '👣', msg: ["足元がノイズで霞んでいる……。", "どこからか「上へ戻れ」という声が聞こえた。"] }
+        ]
     }
 };
