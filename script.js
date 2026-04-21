@@ -34,32 +34,37 @@ const MONOLOGUES = {
     100: "「100枚。……千羽鶴が完成した。 CHAPTER 1 END（静かなノイズ）」"
 };
 
-// --- 2. イベント処理（心臓部） ---
+// --- 2. イベント処理（拾ったら消えるように修正） ---
 function checkEvents(map) {
-    const ev = map.events.find(ev => ev.x === state.x && ev.y === state.y);
-    if (!ev) return;
+    // 【修正】findではなくfindIndexで場所を特定
+    const evIndex = map.events.findIndex(ev => ev.x === state.x && ev.y === state.y);
+    if (evIndex === -1) return;
+
+    const ev = map.events[evIndex];
 
     if (!state.eventCounts[ev.id]) state.eventCounts[ev.id] = 0;
     state.eventCounts[ev.id]++;
     const count = state.eventCounts[ev.id];
 
     if (ev.type === 'origami') {
-        if (!state.history.includes(ev.id)) {
-            state.origamiCount++;
-            state.history.push(ev.id);
-            const se = document.getElementById('se-pickup');
-            if(se) se.play().catch(()=>{});
-            
-            let msg = ev.msg;
-            if (MONOLOGUES[state.origamiCount]) {
-                msg += "\n\n" + MONOLOGUES[state.origamiCount];
-            }
-            typeWriter(msg);
-            
-            // 折り紙の枚数表示を更新
-            const countEl = document.getElementById('origami-count');
-            if (countEl) countEl.textContent = state.origamiCount;
+        // カウントアップ
+        state.origamiCount++;
+        
+        // 【修正】歴史に刻み、かつ「現在のマップのイベントリスト」から物理的に消す
+        state.history.push(ev.id);
+        map.events.splice(evIndex, 1); 
+
+        const se = document.getElementById('se-pickup');
+        if(se) se.play().catch(()=>{});
+        
+        let msg = ev.msg;
+        if (MONOLOGUES[state.origamiCount]) {
+            msg += "\n\n" + MONOLOGUES[state.origamiCount];
         }
+        typeWriter(msg);
+        
+        // 折り紙の表示を即時更新
+        updateUI();
         return;
     }
 
@@ -68,6 +73,16 @@ function checkEvents(map) {
 
     applyWeirdEffect(ev.id, count);
     typeWriter(displayMsg);
+}
+
+// UI更新をひとまとめに
+function updateUI() {
+    const countEl = document.getElementById('origami-count');
+    if (countEl) countEl.textContent = state.origamiCount;
+    
+    const nameEl = document.getElementById('map-name');
+    const mapData = MAPS[state.currentMap];
+    if (nameEl && mapData) nameEl.textContent = mapData.name;
 }
 
 function applyWeirdEffect(evId, count) {
@@ -94,21 +109,7 @@ function renderMap() {
     const mapData = MAPS[state.currentMap];
     if (!mapData) return;
     
-    // 【復活ロジック】エリア侵入時にランダム生成
-    if (Math.random() < 0.5) { 
-        const randomX = Math.floor(Math.random() * 13);
-        const randomY = Math.floor(Math.random() * 12);
-        const exists = mapData.events.find(e => e.x === randomX && e.y === randomY);
-        if (!exists) {
-            mapData.events.push({
-                id: 'gen_' + Date.now(),
-                x: randomX, y: randomY,
-                type: 'origami', char: '✨',
-                msg: "ノイズの隙間に、新たな折り紙が結実していた。"
-            });
-        }
-    }
-
+    // イベント（✨や影）描画
     mapData.events.forEach(event => {
         const div = document.createElement('div');
         div.className = 'cell';
@@ -118,6 +119,7 @@ function renderMap() {
         screen.appendChild(div);
     });
     
+    // 🐥描画
     const playerDiv = document.createElement('div');
     playerDiv.id = 'player';
     playerDiv.style.left = (state.x * 32) + 'px';
@@ -125,15 +127,13 @@ function renderMap() {
     playerDiv.textContent = '🐥';
     screen.appendChild(playerDiv);
     
-    const nameEl = document.getElementById('map-name');
-    if (nameEl) nameEl.textContent = mapData.name;
+    updateUI();
 }
 
-// --- 4. 移動処理（ここを修正しました） ---
+// --- 4. 移動処理（生成タイミングをここに固定） ---
 function moveArea(exitData) {
     if (!exitData || !exitData.map) return;
 
-    // 行き先のマップがなければ生成
     if (!MAPS[exitData.map]) {
         generateInfiniteMap(exitData.map);
     }
@@ -141,6 +141,22 @@ function moveArea(exitData) {
     state.currentMap = exitData.map;
     state.x = exitData.x ?? 6;
     state.y = exitData.y ?? 5;
+
+    // 【修正】エリア移動時のみ、20%の確率で折り紙を生成
+    const targetMap = MAPS[state.currentMap];
+    if (Math.random() < 0.2) { 
+        const rx = Math.floor(Math.random() * 13);
+        const ry = Math.floor(Math.random() * 12);
+        const exists = targetMap.events.find(e => e.x === rx && e.y === ry);
+        if (!exists) {
+            targetMap.events.push({
+                id: 'gen_' + Date.now(),
+                x: rx, y: ry,
+                type: 'origami', char: '✨',
+                msg: "ノイズの隙間に、新たな折り紙が結実していた。"
+            });
+        }
+    }
 
     renderMap();
 }
@@ -178,7 +194,6 @@ function typeWriter(text) {
     if(!dialog) return;
     dialog.textContent = "";
     
-    // こだわりの特別な色演出
     const isSpecial = state.origamiCount > 0 && state.origamiCount % 10 === 0;
     dialog.style.color = isSpecial ? "gold" : "white";
     
@@ -194,7 +209,6 @@ function typeWriter(text) {
     }, 30);
 }
 
-// --- 【魂を刻んだ無限生成エンジン】 ---
 function generateInfiniteMap(mapId) {
     if (MAPS[mapId]) return;
 
@@ -204,7 +218,7 @@ function generateInfiniteMap(mapId) {
                        suffixes[Math.floor(Math.random() * suffixes.length)];
 
     const soulFragments = [
-        "「空が、あんなに低かったっけ……？」",
+        "「空が, あんなに低かったっけ……？」",
         "「誰のログインパスワードも、もう意味をなさない」",
         "「🐥の羽が、一枚、アスファルトに溶けていった」",
         "「整合性は死んだ。ノイズだけが正しい」",
@@ -233,15 +247,6 @@ function generateInfiniteMap(mapId) {
             x: Math.floor(Math.random() * 13), y: Math.floor(Math.random() * 12),
             char: Math.random() > 0.5 ? '👤' : '💾', 
             msg: [soulFragments[Math.floor(Math.random() * soulFragments.length)]]
-        });
-    }
-
-    if (Math.random() < 0.5) {
-        MAPS[mapId].events.push({
-            id: 'gen_origami_' + Date.now(),
-            x: Math.floor(Math.random() * 13), y: Math.floor(Math.random() * 12),
-            type: 'origami', char: '✨',
-            msg: "世界のノイズの中から、祈りの結晶を拾い上げた。"
         });
     }
 }
