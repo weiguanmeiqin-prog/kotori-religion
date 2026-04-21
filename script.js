@@ -68,14 +68,40 @@ function generateRandomRuins() {
     return layout;
 }
 
+// ノイズの狭間専用：拾った時のランダムメッセージ集
+const LABYRINTH_MESSAGES = [
+    "ノイズの狭間に、震える1枚があった。",
+    "誰かの「助けて」という文字が、折り紙の形を保っている。",
+    "黄金の紙だ。これだけは、この世界の腐食を拒んでいる。",
+    "「……みつ……けた……」 どこからか声がした気がした。",
+    "0と1の隙間に、物理的な感触を持った紙が落ちている。",
+    "これ以上拾ってはいけない。そんな気がしたが、手が動いた。",
+    "かつての若者が綴った、愛の告白が書かれた折り紙だ。"
+];
+
 function enterInfiniteLabyrinth() {
     const map = MAPS["infinite_labyrinth"];
     map.layout = generateRandomRuins();
-    const rx = Math.floor(Math.random() * 11) + 1;
-    const ry = Math.floor(Math.random() * 10) + 1;
-    map.events = [
-        { id: 'random_' + Date.now(), x: rx, y: ry, type: 'origami', char: '✨', msg: "ノイズの狭間に、震える1枚があった。" }
-    ];
+    
+    if (Math.random() < 0.05) { // 確率を少し絞ってレア感をアップ
+        map.events = [{ 
+            id: 'shrine', x: 6, y: 6, char: '⛩️', 
+            msg: ["「教祖様の祭壇」を見つけた。", "🐥「よく来たね」と声がした気がした。", "ここは、すべてのノイズが消える場所だ。"] 
+        }];
+    } else {
+        const rx = Math.floor(Math.random() * 11) + 1;
+        const ry = Math.floor(Math.random() * 10) + 1;
+        // メッセージをランダムに抽選
+        const randomMsg = LABYRINTH_MESSAGES[Math.floor(Math.random() * LABYRINTH_MESSAGES.length)];
+        
+        map.events = [{ 
+            id: 'random_' + Date.now(), 
+            x: rx, y: ry, 
+            type: 'origami', 
+            char: '✨', 
+            msg: randomMsg 
+        }];
+    }
 }
 
 function renderMap() {
