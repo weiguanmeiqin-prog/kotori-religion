@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>鳥オークション広場</title>
+<title>マルチ対応！リアルタイム鳥オークション広場</title>
 <style>
 body{
   background:#050505;
@@ -26,12 +26,23 @@ body{
   font-size:1.5rem;
   font-weight:bold;
 }
+#username-display{
+  color: #4fc3f7;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
 #birdName{
   font-size:2rem;
   color:#00bfff;
 }
 #birdEmoji{
   font-size:5rem;
+}
+.btn-group {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 15px;
 }
 button{
   background:#00bfff;
@@ -41,14 +52,32 @@ button{
   border-radius:10px;
   cursor:pointer;
   font-weight:bold;
+  font-size: 1rem;
 }
 button:hover{
   opacity:0.9;
+}
+button:disabled {
+  background: #555;
+  color: #aaa;
+  cursor: not-allowed;
 }
 #news{
   color:gold;
   margin:15px;
   font-weight:bold;
+  min-height: 1.2em;
+}
+#timer {
+  font-size: 1.5rem;
+  color: #ff4444;
+  font-weight: bold;
+  margin: 10px 0;
+}
+#auctionStatus {
+  color: #a7ffeb;
+  font-weight: bold;
+  margin: 10px 0;
 }
 .collection{
   margin-top:30px;
@@ -60,21 +89,51 @@ button:hover{
   border-radius:10px;
   background:#222;
 }
+/* ログインモーダル */
+#login-overlay {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center;
+  z-index: 100;
+}
+.login-box {
+  background: #222; padding: 30px; border-radius: 10px; border: 1px solid #444;
+}
+.login-box input {
+  padding: 10px; font-size: 1rem; border-radius: 5px; border: 1px solid #666; width: 80%; margin-bottom: 15px;
+}
 </style>
 </head>
 <body>
-<h1>🏛️ 鳥オークション広場</h1>
+
+<div id="login-overlay">
+  <div class="login-box">
+    <h2>🏛️ オークション広場にログイン</h2>
+    <p>競りに参加するための名前を入力してください</p>
+    <input type="text" id="username-input" placeholder="ハンター名を入力..." maxlength="10"><br>
+    <button id="login-submit-btn" disabled>読み込み中...</button>
+  </div>
+</div>
+
+<h1>🏛️ マルチ対応！リアルタイム鳥オークション</h1>
+<div id="username-display">あなた: 未ログイン</div>
 <div id="coins">所持コイン: 0</div>
-<div id="news"></div>
+<div id="news">オークションの開始を待っています...</div>
+
 <div class="card">
+<div id="timer">残り時間: --秒</div>
 <div id="birdEmoji">🐤</div>
 <h2 id="birdName">読み込み中...</h2>
 <p id="birdDesc"></p>
-<h3 id="price">価格: 0コイン</h3>
-<button onclick="buyBird()">
-💰 落札する
-</button>
+<div id="auctionStatus">現在の最高入札者: なし</div>
+<h3 id="price">現在の価格: 0コイン</h3>
+
+<div class="btn-group">
+  <button id="bidBtn" onclick="playerBid()" disabled>🔨 +100コインで入札</button>
+  <button id="buyNowBtn" onclick="buyNow()" disabled>💰 即決落札する</button>
 </div>
+<button id="nextBtn" onclick="hostNewAuction()" style="margin-top:15px; background:#ffd54f;">新しい鳥を出品する</button>
+</div>
+
 <div class="collection">
 <h2>📚 あなたの鳥図鑑</h2>
 <div id="collection"></div>
@@ -86,7 +145,7 @@ button:hover{
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, updateDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
@@ -103,21 +162,42 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// グローバルにFirebase関数を展開
+window.db = db;
+window.doc = doc;
+window.setDoc = setDoc;
+window.updateDoc = updateDoc;
+
+// 匿名認証
 try {
   await signInAnonymously(auth);
+  // 認証が成功したらログインボタンを押せるようにする
+  const loginBtn = document.getElementById("login-submit-btn");
+  loginBtn.innerText = "入場する";
+  loginBtn.disabled = false;
+  loginBtn.onclick = () => {
+    const name = document.getElementById("username-input").value.trim();
+    if(name) {
+      window.myName = name;
+      document.getElementById("username-display").innerText = "あなた: " + name;
+      document.getElementById("login-overlay").style.display = "none";
+      // データベースの監視を開始
+      startListeningAuction();
+    } else {
+      alert("名前を入力してください！");
+    }
+  };
 } catch (e) {
   console.error("匿名認証に失敗しました:", e);
+  alert("通信エラーが発生しました。");
 }
-
-window.db = db;
-window.auth = auth;
 </script>
 
 <script>
-// グローバル変数の定義
-let currentBird = null;
+// ゲームロジック
+let currentAuctionData = null;
+let localTimerInterval = null;
 
-// 初回のみ所持金を10000コインに設定（デバッグ・テスト用）
 if (localStorage.getItem("coins") === null) {
   localStorage.setItem("coins", "10000");
 }
@@ -129,54 +209,10 @@ const rarityTable = [
   {name: "レジェンド", chance: 4, color: "#ffd54f"},
   {name: "ゴッド", chance: 1, color: "#ff4444"}
 ];
-
 const emojis = ["🐤","🐥","🐦","🕊️","🦉","🐧","🦚","🦩","🦜","🦢"];
-
-const prefixes = [
-  "寝坊","哲学","監査","無職","会議",
-  "暴走","混乱","伝説","深夜","昼寝",
-  "虚無","錬金","神託","爆発","量子",
-  "陰謀","迷子","超越","覚醒","終末",
-  "禁断","黄金","神速","混沌","究極"
-];
-
-const suffixes = [
-  "鳥","大臣","司祭","教授","主任",
-  "監督","皇帝","マスター","預言者",
-  "執行官","管理者","博士","神官",
-  "騎士","商人"
-];
-
-const traits = [
-  "なぜか人気",
-  "市場を支配した",
-  "3秒で寝る",
-  "会議を破壊する",
-  "哲学を売っている",
-  "存在が怪しい",
-  "税金に詳しい",
-  "誰も見たことがない",
-  "伝説扱いされている",
-  "鳴き声がうるさい",
-  "徳を集めている",
-  "小鳥教公認",
-  "謎の資産家",
-  "折り紙が得意",
-  "市場から警戒されている"
-];
-
-const newsList = [
-  "📈 監査鳥バブル発生",
-  "📉 哲学鳥ショック",
-  "🏛️ 鳥類会議開催",
-  "🐤 無職鳥人気急上昇",
-  "📰 寝坊鳥が市場を巻",
-  "⚠️ 市場が混乱しています",
-  "💰 錬金鳥が暴騰中",
-  "🌟 ゴッド鳥目撃情報",
-  "☠️ 存在しない鳥の噂",
-  "📜 教祖鳥が声明発表"
-];
+const prefixes = ["寝坊","哲学","監査","無職","会議","暴走","混乱","伝説","深夜","昼寝","虚無","錬金","神託","爆発","量子","陰謀","迷子","超越","覚醒","終末","禁断","黄金","神速","混沌","究極"];
+const suffixes = ["鳥","大臣","司祭","教授","主任","監督","皇帝","マスター","預言者","執行官","管理者","博士","神官","騎士","商人"];
+const traits = ["なぜか人気","市場を支配した","3秒で寝る","会議を破壊する","哲学を売っている","存在が怪しい","税金に詳しい","誰も見たことがない","伝説扱いされている","鳴き声がうるさい","徳を集めている","小鳥教公認","謎の資産家","折り紙が得意","市場から警戒されている"];
 
 function updateCoins() {
   const coins = parseInt(localStorage.getItem("coins") || "0", 10);
@@ -188,61 +224,199 @@ function getRarity(){
   let total = 0;
   for(const rarity of rarityTable){
     total += rarity.chance;
-    if(roll <= total){
-      return rarity;
-    }
+    if(roll <= total){ return rarity; }
   }
   return rarityTable[0];
 }
 
-function generateBird(){
+// 1. 全員で同期するためのFirestoreリアルタイムリスナー
+function startListeningAuction() {
+  const auctionDocRef = window.doc(window.db, "auctions", "current");
+
+  window.onSnapshot(auctionDocRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      document.getElementById("news").innerText = "現在オークションは開催されていません。「新しい鳥を出品する」を押してください。";
+      return;
+    }
+
+    const data = snapshot.data();
+    currentAuctionData = data;
+
+    // 画面表示の上書き（全員同時に同じ内容に変わる）
+    document.getElementById("birdEmoji").innerText = data.bird.emoji;
+    document.getElementById("birdName").innerHTML = data.bird.name + "【<span style='color:" + data.bird.rarityColor + "'>" + data.bird.rarity + "</span>】";
+    document.getElementById("birdDesc").innerText = data.bird.trait;
+    document.getElementById("price").innerHTML = `現在の価格: <span style="color:yellow">${data.currentPrice}</span> コイン <br><small style="color:#aaa">(即決価格: ${data.bird.price} コイン)</small>`;
+    document.getElementById("auctionStatus").innerText = `現在の最高入札者: 🎉 ${data.highestBidder} (${data.highestBidderName || 'なし'})`;
+
+    // ボタンの制御
+    if (data.status === "active") {
+      document.getElementById("bidBtn").disabled = false;
+      document.getElementById("buyNowBtn").disabled = false;
+      startLocalTimer(data.endTime);
+    } else {
+      document.getElementById("bidBtn").disabled = true;
+      document.getElementById("buyNowBtn").disabled = true;
+      clearInterval(localTimerInterval);
+      
+      if (data.status === "sold") {
+        document.getElementById("timer").innerText = "落札終了！";
+        document.getElementById("news").innerText = `📢 ${data.highestBidderName} さんが ${data.currentPrice} コインで落札しました！`;
+      } else if (data.status === "timeout") {
+        document.getElementById("timer").innerText = "タイムアップ！";
+        if (data.highestBidder === "なし") {
+          document.getElementById("news").innerText = "流札しました。誰も入札しませんでした。";
+        } else {
+          document.getElementById("news").innerText = `📢 タイムアップ！ ${data.highestBidderName} さんの落札です！`;
+        }
+      }
+    }
+  });
+}
+
+// 2. ローカルでのカウントダウン処理（サーバーの終了時刻を基準に計算）
+function startLocalTimer(endTimeTimestamp) {
+  clearInterval(localTimerInterval);
+  localTimerInterval = setInterval(() => {
+    const now = Date.now();
+    const diff = Math.ceil((endTimeTimestamp - now) / 1000);
+
+    if (diff <= 0) {
+      clearInterval(localTimerInterval);
+      document.getElementById("timer").innerText = "終了処理中...";
+      // 自分が最高入札者の状態でタイムアップしたら、終了ステータスを送信
+      if (currentAuctionData && currentAuctionData.status === "active" && currentAuctionData.highestBidderUid === window.myName) {
+         triggerEndAuction("timeout");
+      }
+    } else {
+      document.getElementById("timer").innerText = "残り時間: " + diff + "秒";
+    }
+  }, 500);
+}
+
+// 3. 新しい鳥を全員の画面に出品する（誰が押してもOK）
+async function hostNewAuction() {
+  let bird;
   if(Math.random() < 0.005){
-    currentBird = {
-      emoji: "☠️",
-      rarity: "神話級",
-      rarityColor: "#ff00ff",
-      name: "存在しない鳥",
-      trait: "本来存在しないはずの個体",
-      price: 9999
-    };
+    bird = { emoji: "☠️", rarity: "神話級", rarityColor: "#ff00ff", name: "存在しない鳥", trait: "本来存在しないはずの個体", price: 9999 };
   } else {
     const rarity = getRarity();
-    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-    const trait = traits[Math.floor(Math.random() * traits.length)];
-    let price;
-    switch(rarity.name){
-      case "ノーマル":
-        price = 50 + Math.floor(Math.random() * 150);
-        break;
-      case "レア":
-        price = 200 + Math.floor(Math.random() * 300);
-        break;
-      case "エピック":
-        price = 500 + Math.floor(Math.random() * 700);
-        break;
-      case "レジェンド":
-        price = 1500 + Math.floor(Math.random() * 1500);
-        break;
-      case "ゴッド":
-        price = 5000 + Math.floor(Math.random() * 5000);
-        break;
-    }
-    currentBird = {
-      emoji,
+    bird = {
+      emoji: emojis[Math.floor(Math.random() * emojis.length)],
       rarity: rarity.name,
       rarityColor: rarity.color,
-      name: prefix + suffix,
-      trait,
-      price
+      name: prefixes[Math.floor(Math.random() * prefixes.length)] + suffixes[Math.floor(Math.random() * suffixes.length)],
+      trait: traits[Math.floor(Math.random() * traits.length)],
+      price: (50 + Math.floor(Math.random() * 2000)) * 2 
     };
   }
 
-  document.getElementById("birdEmoji").innerText = currentBird.emoji;
-  document.getElementById("birdName").innerHTML = currentBird.name + "【<span style='color:" + currentBird.rarityColor + "'>" + currentBird.rarity + "</span>】";
-  document.getElementById("birdDesc").innerText = currentBird.trait;
-  document.getElementById("price").innerText = "価格: " + currentBird.price + "コイン";
+  const startPrice = Math.floor(bird.price * 0.3);
+  const duration = 15 * 1000; // 制限時間15秒
+  const endTime = Date.now() + duration;
+
+  const auctionDocRef = window.doc(window.db, "auctions", "current");
+  await window.setDoc(auctionDocRef, {
+    bird: bird,
+    currentPrice: startPrice,
+    highestBidder: "なし",
+    highestBidderName: "なし",
+    highestBidderUid: "",
+    endTime: endTime,
+    status: "active"
+  });
+}
+
+// 4. 他のプレイヤーと競り合う（入札ボタン）
+async function playerBid() {
+  if (!currentAuctionData || currentAuctionData.status !== "active") return;
+
+  let coins = parseInt(localStorage.getItem("coins") || "0", 10);
+  const nextPrice = currentAuctionData.currentPrice + 100;
+
+  if (coins < nextPrice) {
+    alert("コインが足りません！");
+    return;
+  }
+
+  if (nextPrice >= currentAuctionData.bird.price) {
+    buyNow();
+    return;
+  }
+
+  // 残り時間を+3秒延長（最大15秒）
+  const currentNow = Date.now();
+  let newEndTime = currentAuctionData.endTime + 3000;
+  if (newEndTime - currentNow > 15000) {
+    newEndTime = currentNow + 15000;
+  }
+
+  // Firebaseのデータを更新（これによって全プレイヤーの画面が一斉に書き換わる）
+  const auctionDocRef = window.doc(window.db, "auctions", "current");
+  await window.updateDoc(auctionDocRef, {
+    currentPrice: nextPrice,
+    highestBidder: "プレイヤー",
+    highestBidderName: window.myName,
+    highestBidderUid: window.myName, // 終了判定用
+    endTime: newEndTime
+  });
+}
+
+// 5. 即決価格での落札
+async function buyNow() {
+  if (!currentAuctionData || currentAuctionData.status !== "active") return;
+
+  let coins = parseInt(localStorage.getItem("coins") || "0", 10);
+  const price = currentAuctionData.bird.price;
+
+  if (coins < price) {
+    alert("コインが足りません！");
+    return;
+  }
+
+  // 自分のお金を減らす
+  coins -= price;
+  localStorage.setItem("coins", coins.toString());
+  updateCoins();
+
+  // 図鑑に登録
+  addBirdToCollection(currentAuctionData.bird);
+
+  // オークションを「落札終了」にする
+  const auctionDocRef = window.doc(window.db, "auctions", "current");
+  await window.updateDoc(auctionDocRef, {
+    currentPrice: price,
+    highestBidderName: window.myName,
+    status: "sold"
+  });
+  alert("即決落札しました！");
+}
+
+// 6. タイムアップによる終了処理
+async function triggerEndAuction(reason) {
+  if (!currentAuctionData || currentAuctionData.status !== "active") return;
+
+  const auctionDocRef = window.doc(window.db, "auctions", "current");
+  await window.updateDoc(auctionDocRef, {
+    status: "timeout"
+  });
+
+  // もし自分が最終的な勝者だったら、お支払金処理と図鑑登録
+  if (currentAuctionData.highestBidderName === window.myName) {
+    let coins = parseInt(localStorage.getItem("coins") || "0", 10);
+    coins -= currentAuctionData.currentPrice;
+    localStorage.setItem("coins", coins.toString());
+    updateCoins();
+    addBirdToCollection(currentAuctionData.bird);
+    alert("🎉 オークションに勝利し、鳥を獲得しました！");
+  }
+}
+
+function addBirdToCollection(bird) {
+  const collection = JSON.parse(localStorage.getItem("birdCollection") || "[]");
+  collection.push(bird);
+  localStorage.setItem("birdCollection", JSON.stringify(collection));
+  renderCollection();
 }
 
 function renderCollection(){
@@ -257,37 +431,9 @@ function renderCollection(){
   });
 }
 
-function buyBird() {
-  if (!currentBird) return;
-  
-  let coins = parseInt(localStorage.getItem("coins") || "0", 10);
-  if (coins < currentBird.price) {
-    alert("コインが足りません！");
-    return;
-  }
-  
-  // コインの減算と保存
-  coins -= currentBird.price;
-  localStorage.setItem("coins", coins.toString());
-  
-  // コレクションへの追加と保存
-  const collection = JSON.parse(localStorage.getItem("birdCollection") || "[]");
-  collection.push(currentBird);
-  localStorage.setItem("birdCollection", JSON.stringify(collection));
-  
-  alert(currentBird.name + " を落札しました！");
-  
-  // 画面の更新
-  updateCoins();
-  renderCollection();
-  generateBird(); // 次の鳥を出す
-}
-
 window.onload = () => {
   updateCoins();
-  generateBird();
   renderCollection();
-  document.getElementById("news").innerText = newsList[Math.floor(Math.random() * newsList.length)];
 };
 </script>
 </body>
