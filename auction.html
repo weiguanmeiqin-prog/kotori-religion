@@ -128,10 +128,10 @@ button:disabled {
 <h3 id="price">現在の価格: 0コイン</h3>
 
 <div class="btn-group">
-  <button id="bidBtn" onclick="playerBid()" disabled>🔨 +100コインで入札</button>
-  <button id="buyNowBtn" onclick="buyNow()" disabled>💰 即決落札する</button>
+  <button id="bidBtn" disabled>🔨 +100コインで入札</button>
+  <button id="buyNowBtn" disabled>💰 即決落札する</button>
 </div>
-<button id="nextBtn" onclick="hostNewAuction()" style="margin-top:15px; background:#ffd54f;">新しい鳥を出品する</button>
+<button id="nextBtn" style="margin-top:15px; background:#ffd54f;">新しい鳥を出品する</button>
 </div>
 
 <div class="collection">
@@ -145,7 +145,7 @@ button:disabled {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, updateDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
@@ -162,39 +162,8 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// グローバルにFirebase関数を展開
-window.db = db;
-window.doc = doc;
-window.setDoc = setDoc;
-window.updateDoc = updateDoc;
-
-// 匿名認証
-try {
-  await signInAnonymously(auth);
-  // 認証が成功したらログインボタンを押せるようにする
-  const loginBtn = document.getElementById("login-submit-btn");
-  loginBtn.innerText = "入場する";
-  loginBtn.disabled = false;
-  loginBtn.onclick = () => {
-    const name = document.getElementById("username-input").value.trim();
-    if(name) {
-      window.myName = name;
-      document.getElementById("username-display").innerText = "あなた: " + name;
-      document.getElementById("login-overlay").style.display = "none";
-      // データベースの監視を開始
-      startListeningAuction();
-    } else {
-      alert("名前を入力してください！");
-    }
-  };
-} catch (e) {
-  console.error("匿名認証に失敗しました:", e);
-  alert("通信エラーが発生しました。");
-}
-</script>
-
-<script>
-// ゲームロジック
+// ゲーム内グローバル変数
+let myName = "";
 let currentAuctionData = null;
 let localTimerInterval = null;
 
@@ -231,9 +200,9 @@ function getRarity(){
 
 // 1. 全員で同期するためのFirestoreリアルタイムリスナー
 function startListeningAuction() {
-  const auctionDocRef = window.doc(window.db, "auctions", "current");
+  const auctionDocRef = doc(db, "auctions", "current");
 
-  window.onSnapshot(auctionDocRef, (snapshot) => {
+  onSnapshot(auctionDocRef, (snapshot) => {
     if (!snapshot.exists()) {
       document.getElementById("news").innerText = "現在オークションは開催されていません。「新しい鳥を出品する」を押してください。";
       return;
@@ -247,7 +216,7 @@ function startListeningAuction() {
     document.getElementById("birdName").innerHTML = data.bird.name + "【<span style='color:" + data.bird.rarityColor + "'>" + data.bird.rarity + "</span>】";
     document.getElementById("birdDesc").innerText = data.bird.trait;
     document.getElementById("price").innerHTML = `現在の価格: <span style="color:yellow">${data.currentPrice}</span> コイン <br><small style="color:#aaa">(即決価格: ${data.bird.price} コイン)</small>`;
-    document.getElementById("auctionStatus").innerText = `現在の最高入札者: 🎉 ${data.highestBidder} (${data.highestBidderName || 'なし'})`;
+    document.getElementById("auctionStatus").innerText = `現在の最高入札者: 🎉 ${data.highestBidderName || 'なし'}`;
 
     // ボタンの制御
     if (data.status === "active") {
@@ -264,7 +233,7 @@ function startListeningAuction() {
         document.getElementById("news").innerText = `📢 ${data.highestBidderName} さんが ${data.currentPrice} コインで落札しました！`;
       } else if (data.status === "timeout") {
         document.getElementById("timer").innerText = "タイムアップ！";
-        if (data.highestBidder === "なし") {
+        if (data.highestBidderUid === "") {
           document.getElementById("news").innerText = "流札しました。誰も入札しませんでした。";
         } else {
           document.getElementById("news").innerText = `📢 タイムアップ！ ${data.highestBidderName} さんの落札です！`;
@@ -274,7 +243,7 @@ function startListeningAuction() {
   });
 }
 
-// 2. ローカルでのカウントダウン処理（サーバーの終了時刻を基準に計算）
+// 2. ローカルでのカウントダウン処理
 function startLocalTimer(endTimeTimestamp) {
   clearInterval(localTimerInterval);
   localTimerInterval = setInterval(() => {
@@ -285,8 +254,8 @@ function startLocalTimer(endTimeTimestamp) {
       clearInterval(localTimerInterval);
       document.getElementById("timer").innerText = "終了処理中...";
       // 自分が最高入札者の状態でタイムアップしたら、終了ステータスを送信
-      if (currentAuctionData && currentAuctionData.status === "active" && currentAuctionData.highestBidderUid === window.myName) {
-         triggerEndAuction("timeout");
+      if (currentAuctionData && currentAuctionData.status === "active" && currentAuctionData.highestBidderUid === myName) {
+         triggerEndAuction();
       }
     } else {
       document.getElementById("timer").innerText = "残り時間: " + diff + "秒";
@@ -294,37 +263,40 @@ function startLocalTimer(endTimeTimestamp) {
   }, 500);
 }
 
-// 3. 新しい鳥を全員の画面に出品する（誰が押してもOK）
+// 3. 新しい鳥を全員の画面に出品する
 async function hostNewAuction() {
-  let bird;
-  if(Math.random() < 0.005){
-    bird = { emoji: "☠️", rarity: "神話級", rarityColor: "#ff00ff", name: "存在しない鳥", trait: "本来存在しないはずの個体", price: 9999 };
-  } else {
-    const rarity = getRarity();
-    bird = {
-      emoji: emojis[Math.floor(Math.random() * emojis.length)],
-      rarity: rarity.name,
-      rarityColor: rarity.color,
-      name: prefixes[Math.floor(Math.random() * prefixes.length)] + suffixes[Math.floor(Math.random() * suffixes.length)],
-      trait: traits[Math.floor(Math.random() * traits.length)],
-      price: (50 + Math.floor(Math.random() * 2000)) * 2 
-    };
+  try {
+    let bird;
+    if(Math.random() < 0.005){
+      bird = { emoji: "☠️", rarity: "神話級", rarityColor: "#ff00ff", name: "存在しない鳥", trait: "本来存在しないはずの個体", price: 9999 };
+    } else {
+      const rarity = getRarity();
+      bird = {
+        emoji: emojis[Math.floor(Math.random() * emojis.length)],
+        rarity: rarity.name,
+        rarityColor: rarity.color,
+        name: prefixes[Math.floor(Math.random() * prefixes.length)] + suffixes[Math.floor(Math.random() * suffixes.length)],
+        trait: traits[Math.floor(Math.random() * traits.length)],
+        price: (50 + Math.floor(Math.random() * 2000)) * 2 
+      };
+    }
+
+    const startPrice = Math.floor(bird.price * 0.3);
+    const duration = 15 * 1000; // 制限時間15秒
+    const endTime = Date.now() + duration;
+
+    const auctionDocRef = doc(db, "auctions", "current");
+    await setDoc(auctionDocRef, {
+      bird: bird,
+      currentPrice: startPrice,
+      highestBidderName: "なし",
+      highestBidderUid: "",
+      endTime: endTime,
+      status: "active"
+    });
+  } catch (error) {
+    alert("出品エラー: " + error.message);
   }
-
-  const startPrice = Math.floor(bird.price * 0.3);
-  const duration = 15 * 1000; // 制限時間15秒
-  const endTime = Date.now() + duration;
-
-  const auctionDocRef = window.doc(window.db, "auctions", "current");
-  await window.setDoc(auctionDocRef, {
-    bird: bird,
-    currentPrice: startPrice,
-    highestBidder: "なし",
-    highestBidderName: "なし",
-    highestBidderUid: "",
-    endTime: endTime,
-    status: "active"
-  });
 }
 
 // 4. 他のプレイヤーと競り合う（入札ボタン）
@@ -351,13 +323,11 @@ async function playerBid() {
     newEndTime = currentNow + 15000;
   }
 
-  // Firebaseのデータを更新（これによって全プレイヤーの画面が一斉に書き換わる）
-  const auctionDocRef = window.doc(window.db, "auctions", "current");
-  await window.updateDoc(auctionDocRef, {
+  const auctionDocRef = doc(db, "auctions", "current");
+  await updateDoc(auctionDocRef, {
     currentPrice: nextPrice,
-    highestBidder: "プレイヤー",
-    highestBidderName: window.myName,
-    highestBidderUid: window.myName, // 終了判定用
+    highestBidderName: myName,
+    highestBidderUid: myName,
     endTime: newEndTime
   });
 }
@@ -374,35 +344,31 @@ async function buyNow() {
     return;
   }
 
-  // 自分のお金を減らす
   coins -= price;
   localStorage.setItem("coins", coins.toString());
   updateCoins();
 
-  // 図鑑に登録
   addBirdToCollection(currentAuctionData.bird);
 
-  // オークションを「落札終了」にする
-  const auctionDocRef = window.doc(window.db, "auctions", "current");
-  await window.updateDoc(auctionDocRef, {
+  const auctionDocRef = doc(db, "auctions", "current");
+  await updateDoc(auctionDocRef, {
     currentPrice: price,
-    highestBidderName: window.myName,
+    highestBidderName: myName,
     status: "sold"
   });
   alert("即決落札しました！");
 }
 
 // 6. タイムアップによる終了処理
-async function triggerEndAuction(reason) {
+async function triggerEndAuction() {
   if (!currentAuctionData || currentAuctionData.status !== "active") return;
 
-  const auctionDocRef = window.doc(window.db, "auctions", "current");
-  await window.updateDoc(auctionDocRef, {
+  const auctionDocRef = doc(db, "auctions", "current");
+  await updateDoc(auctionDocRef, {
     status: "timeout"
   });
 
-  // もし自分が最終的な勝者だったら、お支払金処理と図鑑登録
-  if (currentAuctionData.highestBidderName === window.myName) {
+  if (currentAuctionData.highestBidderName === myName) {
     let coins = parseInt(localStorage.getItem("coins") || "0", 10);
     coins -= currentAuctionData.currentPrice;
     localStorage.setItem("coins", coins.toString());
@@ -431,10 +397,34 @@ function renderCollection(){
   });
 }
 
-window.onload = () => {
-  updateCoins();
-  renderCollection();
-};
+// ボタンのクリックイベントを結びつける（モジュール用の設定）
+document.getElementById("bidBtn").onclick = playerBid;
+document.getElementById("buyNowBtn").onclick = buyNow;
+document.getElementById("nextBtn").onclick = hostNewAuction;
+
+// 匿名認証とログイン処理の開始
+try {
+  await signInAnonymously(auth);
+  const loginBtn = document.getElementById("login-submit-btn");
+  loginBtn.innerText = "入場する";
+  loginBtn.disabled = false;
+  loginBtn.onclick = () => {
+    const name = document.getElementById("username-input").value.trim();
+    if(name) {
+      myName = name;
+      document.getElementById("username-display").innerText = "あなた: " + name;
+      document.getElementById("login-overlay").style.display = "none";
+      updateCoins();
+      renderCollection();
+      startListeningAuction();
+    } else {
+      alert("名前を入力してください！");
+    }
+  };
+} catch (e) {
+  console.error("匿名認証に失敗しました:", e);
+  alert("通信エラーが発生しました。");
+}
 </script>
 </body>
 </html>
