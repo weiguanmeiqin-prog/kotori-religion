@@ -84,76 +84,153 @@ button:hover{
 ← 聖域へ戻る
 </button>
 <script>
-const birds = [
-["🐤","寝坊鳥"],
-["🕊️","哲学鳥"],
-["🐦","監査鳥"],
-["🦜","無職鳥"],
-["🐥","会議鳥"],
-["🦢","伝説鳥"],
-["🦤","絶滅したふり鳥"],
-["🐓","早起き鳥"],
-["🦉","深夜鳥"],
-["🐧","冷静鳥"],
-["🦩","混乱鳥"],
-["🦚","ナルシスト鳥"]
+const rarityTable = [
+{name:“ノーマル”, chance:60, color:”#ffffff”},
+{name:“レア”, chance:25, color:”#4fc3f7”},
+{name:“エピック”, chance:10, color:”#ba68c8”},
+{name:“レジェンド”, chance:4, color:”#ffd54f”},
+{name:“ゴッド”, chance:1, color:”#ff4444”}
 ];
+
+const emojis = [
+“🐤”,“🐥”,“🐦”,“🕊️”,“🦉”,
+“🐧”,“🦚”,“🦩”,“🦜”,“🦢”
+];
+
+const prefixes = [
+“寝坊”,“哲学”,“監査”,“無職”,“会議”,
+“暴走”,“混乱”,“伝説”,“深夜”,“昼寝”,
+“虚無”,“錬金”,“神託”,“爆発”,“量子”,
+“陰謀”,“迷子”,“超越”,“覚醒”,“終末”,
+“禁断”,“黄金”,“神速”,“混沌”,“究極”
+];
+
+const suffixes = [
+“鳥”,“大臣”,“司祭”,“教授”,“主任”,
+“監督”,“皇帝”,“マスター”,“預言者”,
+“執行官”,“管理者”,“博士”,“神官”,
+“騎士”,“商人”
+];
+
+const traits = [
+“なぜか人気”,
+“市場を支配した”,
+“3秒で寝る”,
+“会議を破壊する”,
+“哲学を売っている”,
+“存在が怪しい”,
+“税金に詳しい”,
+“誰も見たことがない”,
+“伝説扱いされている”,
+“鳴き声がうるさい”,
+“徳を集めている”,
+“小鳥教公認”,
+“謎の資産家”,
+“折り紙が得意”,
+“市場から警戒されている”
+];
+
 const newsList = [
-"📈 監査鳥バブル発生",
-"📉 哲学鳥ショック",
-"🏛️ 鳥類会議開催",
-"🐤 無職鳥人気急上昇",
-"📰 寝坊鳥が市場を席巻",
-"⚠️ 市場が混乱しています"
+“📈 監査鳥バブル発生”,
+“📉 哲学鳥ショック”,
+“🏛️ 鳥類会議開催”,
+“🐤 無職鳥人気急上昇”,
+“📰 寝坊鳥が市場を席巻”,
+“⚠️ 市場が混乱しています”,
+“💰 錬金鳥が暴騰中”,
+“🌟 ゴッド鳥目撃情報”,
+“☠️ 存在しない鳥の噂”,
+“📜 教祖鳥が声明発表”
 ];
-let currentBird;
-function updateCoins(){
-  document.getElementById("coins").innerText =
-    "所持コイン: " +
-    (localStorage.getItem("userCoins") || 0);
+
+function getRarity(){
+
+const roll = Math.random()*100;
+let total = 0;
+
+for(const rarity of rarityTable){
+
+total += rarity.chance;
+if(roll <= total){
+  return rarity;
 }
+
+}
+
+return rarityTable[0];
+}
+
 function generateBird(){
-  const bird =
-    birds[Math.floor(Math.random()*birds.length)];
-  const price =
-    Math.floor(Math.random()*400)+100;
-  currentBird = {
-    emoji:bird[0],
-    name:bird[1],
-    price:price
-  };
-  document.getElementById("birdEmoji").innerText =
-    bird[0];
-  document.getElementById("birdName").innerText =
-    bird[1];
-  document.getElementById("birdDesc").innerText =
-    "市場で発見された個体";
-  document.getElementById("price").innerText =
-    "価格: " + price + "コイン";
+
+if(Math.random() < 0.005){
+
+currentBird = {
+  emoji:"☠️",
+  rarity:"神話級",
+  rarityColor:"#ff00ff",
+  name:"存在しない鳥",
+  trait:"本来存在しないはずの個体",
+  price:9999
+};
+
+}else{
+
+const rarity = getRarity();
+const emoji =
+  emojis[Math.floor(Math.random()*emojis.length)];
+const prefix =
+  prefixes[Math.floor(Math.random()*prefixes.length)];
+const suffix =
+  suffixes[Math.floor(Math.random()*suffixes.length)];
+const trait =
+  traits[Math.floor(Math.random()*traits.length)];
+let price;
+switch(rarity.name){
+  case "ノーマル":
+    price = 50 + Math.floor(Math.random()*150);
+    break;
+  case "レア":
+    price = 200 + Math.floor(Math.random()*300);
+    break;
+  case "エピック":
+    price = 500 + Math.floor(Math.random()*700);
+    break;
+  case "レジェンド":
+    price = 1500 + Math.floor(Math.random()*1500);
+    break;
+  case "ゴッド":
+    price = 5000 + Math.floor(Math.random()*5000);
+    break;
 }
-function buyBird(){
-  let coins =
-    Number(localStorage.getItem("userCoins") || 0);
-  if(coins < currentBird.price){
-    alert("コイン不足です！");
-    return;
-  }
-  coins -= currentBird.price;
-  localStorage.setItem("userCoins", coins);
-  let collection =
-    JSON.parse(localStorage.getItem("birdCollection") || "[]");
-  collection.push(currentBird);
-  localStorage.setItem(
-    "birdCollection",
-    JSON.stringify(collection)
-  );
-  alert(
-    currentBird.name +
-    " を落札しました！"
-  );
-  updateCoins();
-  renderCollection();
-  generateBird();
+currentBird = {
+  emoji,
+  rarity: rarity.name,
+  rarityColor: rarity.color,
+  name: prefix + suffix,
+  trait,
+  price
+};
+
+}
+
+document.getElementById(“birdEmoji”).innerText =
+currentBird.emoji;
+
+document.getElementById(“birdName”).innerHTML =
+currentBird.name +
+“【” +
+currentBird.rarity +
+“】”;
+
+document.getElementById(“birdDesc”).innerText =
+currentBird.trait;
+
+document.getElementById(“price”).innerText =
+“価格: “ +
+currentBird.price +
+“コイン”;
+
+}
 }
 function renderCollection(){
   const area =
