@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鳥オークション広場</title>
+<style>
+body{
+  background:#050505;
+  color:white;
+  text-align:center;
+  font-family:sans-serif;
+  margin:0;
+  padding:20px;
+}
+.card{
+  max-width:700px;
+  margin:auto;
+  padding:20px;
+  border-radius:15px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid #333;
+}
+#coins{
+  color:gold;
+  font-size:1.5rem;
+  font-weight:bold;
+}
+#birdName{
+  font-size:2rem;
+  color:#00bfff;
+}
+#birdEmoji{
+  font-size:5rem;
+}
+button{
+  background:#00bfff;
+  color:black;
+  border:none;
+  padding:12px 24px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+}
+button:hover{
+  opacity:0.9;
+}
+#news{
+  color:gold;
+  margin:15px;
+  font-weight:bold;
+}
+.collection{
+  margin-top:30px;
+}
+.birdItem{
+  display:inline-block;
+  margin:5px;
+  padding:8px;
+  border-radius:10px;
+  background:#222;
+}
+</style>
+</head>
+<body>
+<h1>🏛️ 鳥オークション広場</h1>
+<div id="coins">所持コイン: 0</div>
+<div id="news"></div>
+<div class="card">
+<div id="birdEmoji">🐤</div>
+<h2 id="birdName">読み込み中...</h2>
+<p id="birdDesc"></p>
+<h3 id="price">価格: 0コイン</h3>
+<button onclick="buyBird()">
+💰 落札する
+</button>
+</div>
+<div class="collection">
+<h2>📚 あなたの鳥図鑑</h2>
+<div id="collection"></div>
+</div>
+<br>
+<button onclick="location.href='secret.html'">
+← 聖域へ戻る
+</button>
+<script>
+const birds = [
+["🐤","寝坊鳥"],
+["🕊️","哲学鳥"],
+["🐦","監査鳥"],
+["🦜","無職鳥"],
+["🐥","会議鳥"],
+["🦢","伝説鳥"],
+["🦤","絶滅したふり鳥"],
+["🐓","早起き鳥"],
+["🦉","深夜鳥"],
+["🐧","冷静鳥"],
+["🦩","混乱鳥"],
+["🦚","ナルシスト鳥"]
+];
+const newsList = [
+"📈 監査鳥バブル発生",
+"📉 哲学鳥ショック",
+"🏛️ 鳥類会議開催",
+"🐤 無職鳥人気急上昇",
+"📰 寝坊鳥が市場を席巻",
+"⚠️ 市場が混乱しています"
+];
+let currentBird;
+function updateCoins(){
+  document.getElementById("coins").innerText =
+    "所持コイン: " +
+    (localStorage.getItem("userCoins") || 0);
+}
+function generateBird(){
+  const bird =
+    birds[Math.floor(Math.random()*birds.length)];
+  const price =
+    Math.floor(Math.random()*400)+100;
+  currentBird = {
+    emoji:bird[0],
+    name:bird[1],
+    price:price
+  };
+  document.getElementById("birdEmoji").innerText =
+    bird[0];
+  document.getElementById("birdName").innerText =
+    bird[1];
+  document.getElementById("birdDesc").innerText =
+    "市場で発見された個体";
+  document.getElementById("price").innerText =
+    "価格: " + price + "コイン";
+}
+function buyBird(){
+  let coins =
+    Number(localStorage.getItem("userCoins") || 0);
+  if(coins < currentBird.price){
+    alert("コイン不足です！");
+    return;
+  }
+  coins -= currentBird.price;
+  localStorage.setItem("userCoins", coins);
+  let collection =
+    JSON.parse(localStorage.getItem("birdCollection") || "[]");
+  collection.push(currentBird);
+  localStorage.setItem(
+    "birdCollection",
+    JSON.stringify(collection)
+  );
+  alert(
+    currentBird.name +
+    " を落札しました！"
+  );
+  updateCoins();
+  renderCollection();
+  generateBird();
+}
+function renderCollection(){
+  const area =
+    document.getElementById("collection");
+  area.innerHTML = "";
+  const collection =
+    JSON.parse(localStorage.getItem("birdCollection") || "[]");
+  collection.forEach(b => {
+    const div =
+      document.createElement("div");
+    div.className = "birdItem";
+    div.innerHTML =
+      b.emoji + " " + b.name;
+    area.appendChild(div);
+  });
+}
+window.onload = () => {
+  updateCoins();
+  generateBird();
+  renderCollection();
+  document.getElementById("news").innerText =
+    newsList[
+      Math.floor(Math.random()*newsList.length)
+    ];
+};
+</script>
+</body>
+</html>
