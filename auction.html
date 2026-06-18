@@ -62,7 +62,51 @@ button:hover{
 }
 </style>
 </head>
-<body>
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getFirestore,
+doc,
+getDoc,
+setDoc,
+updateDoc,
+onSnapshot
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import {
+getAuth,
+signInAnonymously
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+
+apiKey:"YOUR_API_KEY",
+authDomain:"YOUR_PROJECT.firebaseapp.com",
+projectId:"YOUR_PROJECT_ID"
+
+};
+
+const app =
+initializeApp(firebaseConfig);
+
+const db =
+getFirestore(app);
+
+const auth =
+getAuth(app);
+
+await signInAnonymously(auth);
+
+window.db = db;
+window.auth = auth;
+
+</script>
+  <body>
 <h1>🏛️ 鳥オークション広場</h1>
 <div id="coins">所持コイン: 0</div>
 <div id="news"></div>
