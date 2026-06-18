@@ -166,7 +166,7 @@ const auth = getAuth(app);
 let myName = "";
 let currentAuctionData = null;
 let localTimerInterval = null;
-let hasProcessedReward = false; // 落札処理の重複防止用フラグ
+let hasProcessedReward = false;
 
 if (localStorage.getItem("coins") === null) {
   localStorage.setItem("coins", "10000");
@@ -206,13 +206,14 @@ function startListeningAuction() {
   onSnapshot(auctionDocRef, (snapshot) => {
     if (!snapshot.exists()) {
       document.getElementById("news").innerText = "現在オークションは開催されていません。「新しい鳥を出品する」を押してください。";
+      document.getElementById("nextBtn").disabled = false; // データがない時は出品できる
       return;
     }
 
     const data = snapshot.data();
     currentAuctionData = data;
 
-    // 画面表示の上書き（名前のあとにレアリティをしっかり追加）
+    // 画面表示の上書き
     document.getElementById("birdEmoji").innerText = data.bird.emoji;
     document.getElementById("birdName").innerHTML = data.bird.name + "【<span style='color:" + data.bird.rarityColor + "'>" + data.bird.rarity + "</span>】";
     document.getElementById("birdDesc").innerText = data.bird.trait;
@@ -223,10 +224,12 @@ function startListeningAuction() {
     if (data.status === "active") {
       document.getElementById("bidBtn").disabled = false;
       document.getElementById("buyNowBtn").disabled = false;
+      document.getElementById("nextBtn").disabled = true; // 🌟オークション中は「出品ボタン」を押せないようにする
       startLocalTimer(data.endTime);
     } else {
       document.getElementById("bidBtn").disabled = true;
       document.getElementById("buyNowBtn").disabled = true;
+      document.getElementById("nextBtn").disabled = false; // 🌟終了したら「出品ボタン」を再び押せるようにする
       clearInterval(localTimerInterval);
       
       if (data.status === "sold" || data.status === "timeout") {
@@ -237,7 +240,6 @@ function startListeningAuction() {
         } else {
           document.getElementById("news").innerText = `📢 ${data.highestBidderName} さんが ${data.currentPrice} コインで落札しました！`;
           
-          // 自分が最高入札者で、まだ落札処理をしていない場合だけ実行
           if (data.highestBidderName === myName && !hasProcessedReward) {
             hasProcessedReward = true;
             processWin(data.currentPrice, data.bird);
@@ -259,7 +261,6 @@ function startLocalTimer(endTimeTimestamp) {
       clearInterval(localTimerInterval);
       document.getElementById("timer").innerText = "終了処理中...";
       
-      // 時間が来たら誰の画面であってもステータスをtimeoutに切り替える
       if (currentAuctionData && currentAuctionData.status === "active") {
         triggerEndAuction();
       }
@@ -288,10 +289,10 @@ async function hostNewAuction() {
     }
 
     const startPrice = Math.floor(bird.price * 0.3);
-    const duration = 15 * 1000; // 15秒間
+    const duration = 15 * 1000;
     const endTime = Date.now() + duration;
 
-    hasProcessedReward = false; // 新しいオークションになったのでフラグをリセット
+    hasProcessedReward = false;
 
     const auctionDocRef = doc(db, "auctions", "current");
     await setDoc(auctionDocRef, {
@@ -389,11 +390,10 @@ function renderCollection(){
   area.innerHTML = "";
   const collection = JSON.parse(localStorage.getItem("birdCollection") || "[]");
   collection.forEach(b => {
-    if (!b || !b.emoji || !b.name) return; // 壊れた古いデータはスキップするガード
+    if (!b || !b.emoji || !b.name) return;
 
     const div = document.createElement("div");
     div.className = "birdItem";
-    // 図鑑側にもレアリティの色がつくように修正！
     div.innerHTML = `${b.emoji} ${b.name} <span style="color:${b.rarityColor || '#fff'}; font-size:0.8rem;">[${b.rarity || 'ノーマル'}]</span>`;
     area.appendChild(div);
   });
